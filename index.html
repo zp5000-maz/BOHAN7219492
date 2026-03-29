@@ -9,230 +9,158 @@
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* 模式與題數資訊 */
         .info-bar { display: flex; justify-content: space-between; font-size: 14px; color: #888; margin-bottom: 10px; }
-        h2 { margin: 0 0 15px 0; font-weight: normal; color: var(--primary); font-size: 22px; }
-
-        /* 圖片容器 */
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #252525; position: relative; }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
-        .question-text { font-size: 32px; font-weight: bold; margin: 40px 0; min-height: 45px; color: white; }
-
-        /* 選項按鈕 */
+        h2 { margin: 0 0 15px 0; font-weight: normal; color: var(--primary); font-size: 22px; border-bottom: 1px solid #333; padding-bottom: 10px; }
+        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #252525; }
+        .image-box img { width: 100%; height: 100%; object-fit: cover; }
+        .question-text { font-size: 36px; font-weight: bold; margin: 40px 0; min-height: 50px; color: white; }
         .options { display: grid; gap: 12px; margin-bottom: 20px; }
-        .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.2s; }
-        .option-btn:hover { border-color: var(--primary); background-color: #252525; }
-        .option-btn:active { transform: scale(0.96); }
-
-        /* 回饋文字 */
+        .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
+        .option-btn:hover { border-color: var(--primary); background: #252525; }
         #feedback { height: 30px; margin-bottom: 15px; font-weight: bold; font-size: 22px; }
-
-        /* 導覽按鈕 */
         .nav-buttons { display: flex; justify-content: center; gap: 15px; }
-        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-size: 16px; cursor: pointer; min-width: 100px; transition: 0.3s; }
+        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; font-size: 16px; cursor: pointer; min-width: 100px; }
         .active-nav { background-color: var(--primary); }
-
         .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
-        #loading-screen { font-size: 18px; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loading-screen">連線至博瀚雲端資料庫...</div>
-
+    <div id="loading-screen">讀取博瀚雲端單字庫...</div>
     <div id="main-content" style="display:none;">
         <div class="info-bar">
             <span id="mode-text">模式：看圖識字</span>
             <span id="progress-text">1 / 10</span>
         </div>
-        <h2 id="header-title">博瀚英文單字卡</h2>
-
+        <h2>博瀚英文單字卡</h2>
         <div id="quiz-display">
             <div id="img-container" class="image-box">
                 <img id="word-image" src="" alt="題目圖片">
             </div>
             <div id="text-container" class="question-text" style="display:none;"></div>
         </div>
-
         <div id="options-container" class="options"></div>
-
         <div id="feedback"></div>
-
         <div class="nav-buttons">
             <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)">上一題</button>
             <button id="next-btn" class="nav-btn active-nav" onclick="changeQuestion(1)">下一題</button>
         </div>
     </div>
-
     <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
 <script>
-    // ⚠️ 請在此處替換成您的 Google 試算表 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv'; 
-
     let wordBank = [];
     let currentIndex = 0;
-    let currentMode = 1; // 1:看圖選英, 2:中翻英, 3:英翻中
-    let preloadedImages = {};
+    let currentMode = 1;
 
-    // 優化圖片網址：縮小尺寸以提升讀取速度
-    function formatImgUrl(url) {
-        if (!url) return "";
+    // 更強大的網址轉換邏輯
+    function getStableImgUrl(item) {
+        let url = item["圖片網址"] ? item["圖片網址"].trim() : "";
+        let word = item["單字"].trim();
+        
+        // 如果是 Unsplash 的網頁網址，轉成圖片直連
         if (url.includes('unsplash.com/photos/')) {
-            const id = url.split('/photos/')[1].split(/[?\/]/)[0];
-            return `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=500&h=350&q=70`;
+            const parts = url.split('/');
+            const id = parts[parts.length - 1].split(/[?#]/)[0];
+            return `https://images.unsplash.com/photo-${id}?auto=format&fit=crop&w=500&h=350&q=80`;
         }
-        return url;
+        
+        // 如果網址無效或沒給，直接用單字自動抓圖 (備援)
+        return `https://loremflickr.com/500/350/${word}?lock=${word.length}`;
     }
 
-    // 預載後續 3 張圖片，讓切換題目時「秒出」
-    function preloadImages(index) {
-        for (let i = 1; i <= 3; i++) {
-            let nextIndex = index + i;
-            if (nextIndex < wordBank.length) {
-                const url = formatImgUrl(wordBank[nextIndex]["圖片網址"]);
-                if (url && !preloadedImages[url]) {
-                    const img = new Image();
-                    img.src = url;
-                    preloadedImages[url] = true;
-                }
-            }
-        }
-    }
-
-    // 初始化讀取試算表
     function fetchSheetData() {
         Papa.parse(csvUrl, {
             download: true,
             header: true,
             complete: function(results) {
-                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== "");
+                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim().length > 0);
                 if(wordBank.length > 0) {
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('main-content').style.display = 'block';
                     loadQuestion();
-                } else {
-                    document.getElementById('loading-screen').innerText = '讀取成功但無資料，請檢查標題是否為：單字、翻譯、圖片網址';
                 }
-            },
-            error: () => document.getElementById('loading-screen').innerText = '網路連線失敗'
+            }
         });
     }
 
     function loadQuestion() {
         const item = wordBank[currentIndex];
         const wordEn = item["單字"].trim();
-        const wordZh = item["翻譯"] ? item["翻譯"].trim() : "未提供翻譯";
-        const imgUrl = formatImgUrl(item["圖片網址"]);
+        const wordZh = item["翻譯"] ? item["翻譯"].trim() : "請先填寫翻譯";
+        
+        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('options-container').innerHTML = "";
 
-        const imgElement = document.getElementById('word-image');
         const imgContainer = document.getElementById('img-container');
         const textContainer = document.getElementById('text-container');
-        const optionsContainer = document.getElementById('options-container');
-        const feedback = document.getElementById('feedback');
-        
-        // 更新進度與模式文字
-        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
-        feedback.innerText = "";
-        optionsContainer.innerHTML = "";
 
-        // 判斷測驗模式
-        // 模式 1: 顯示圖, 選英文
-        // 模式 2: 顯示中, 選英文
-        // 模式 3: 顯示英, 選中文
         if (currentMode === 1) {
-            document.getElementById('mode-text').innerText = "模式一：看圖識字";
+            document.getElementById('mode-text').innerText = "第一關：看圖識字";
             imgContainer.style.display = "flex";
             textContainer.style.display = "none";
-            imgElement.src = imgUrl;
-            preloadImages(currentIndex);
+            document.getElementById('word-image').src = getStableImgUrl(item);
             setupOptions(wordEn, "en");
         } else if (currentMode === 2) {
-            document.getElementById('mode-text').innerText = "模式二：中翻英";
+            document.getElementById('mode-text').innerText = "第二關：中翻英";
             imgContainer.style.display = "none";
             textContainer.style.display = "block";
             textContainer.innerText = wordZh;
             setupOptions(wordEn, "en");
         } else {
-            document.getElementById('mode-text').innerText = "模式三：英翻中";
+            document.getElementById('mode-text').innerText = "第三關：英翻中";
             imgContainer.style.display = "none";
             textContainer.style.display = "block";
             textContainer.innerText = wordEn;
             setupOptions(wordZh, "zh");
         }
-
-        // 更新按鈕顏色
-        document.getElementById('prev-btn').classList.toggle('active-nav', currentIndex !== 0);
     }
 
     function setupOptions(correctAnswer, type) {
-        const container = document.getElementById('options-container');
         let choices = [correctAnswer];
-        
-        // 隨機抓兩個錯誤答案
         let others = wordBank.filter(w => {
-            let val = (type === "en") ? w["單字"].trim() : w["翻譯"].trim();
+            let val = (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : "");
             return val !== correctAnswer;
-        }).map(w => (type === "en") ? w["單字"].trim() : w["翻譯"].trim());
+        }).map(w => (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : ""));
 
-        others.sort(() => Math.random() - 0.5);
+        others.sort(() => 0.5 - Math.random());
         if(others[0]) choices.push(others[0]);
         if(others[1]) choices.push(others[1]);
-        
-        while(choices.length < 3) choices.push("---");
-        choices.sort(() => Math.random() - 0.5);
+        while(choices.length < 3) choices.push("練習中");
+        choices.sort(() => 0.5 - Math.random());
 
         choices.forEach(text => {
             const btn = document.createElement('button');
             btn.className = "option-btn";
             btn.innerText = text;
             btn.onclick = () => {
+                const fb = document.getElementById('feedback');
                 if(text === correctAnswer) {
-                    showFeedback(true, (type === "en" ? text : wordBank[currentIndex]["單字"]));
+                    fb.innerText = "⭕ Correct!";
+                    fb.style.color = "#2ecc71";
+                    const utter = new SpeechSynthesisUtterance(wordBank[currentIndex]["單字"]);
+                    window.speechSynthesis.speak(utter);
                 } else {
-                    showFeedback(false);
+                    fb.innerText = "❌ Try Again!";
+                    fb.style.color = "#e74c3c";
                 }
             };
-            container.appendChild(btn);
+            document.getElementById('options-container').appendChild(btn);
         });
     }
 
-    function showFeedback(isCorrect, speechWord) {
-        const fb = document.getElementById('feedback');
-        if(isCorrect) {
-            fb.innerText = "⭕ Excellent!";
-            fb.style.color = "#2ecc71";
-            // 答對時自動讀音
-            const utter = new SpeechSynthesisUtterance(speechWord);
-            utter.lang = 'en-US';
-            window.speechSynthesis.speak(utter);
-        } else {
-            fb.innerText = "❌ Try Again!";
-            fb.style.color = "#e74c3c";
-        }
-    }
-
     function changeQuestion(step) {
-        let nextIndex = currentIndex + step;
-        
-        if (nextIndex >= wordBank.length) {
-            // 做完 10 題後自動切換到下一個模式
-            if (currentMode < 3) {
-                currentMode++;
-                currentIndex = 0;
-                alert(`恭喜完成！接下來進入${document.getElementById('mode-text').innerText}`);
-            } else {
-                alert("太棒了！三種模式都挑戰成功！");
-                currentIndex = 0;
-                currentMode = 1;
-            }
-        } else if (nextIndex < 0) {
+        currentIndex += step;
+        if (currentIndex >= wordBank.length) {
             currentIndex = 0;
-        } else {
-            currentIndex = nextIndex;
+            currentMode = (currentMode % 3) + 1;
+            alert(`恭喜！進入${currentMode === 2 ? '第二關：中翻英' : '第三關：英翻中'}`);
+        } else if (currentIndex < 0) {
+            currentIndex = 0;
         }
         loadQuestion();
     }
