@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="zh-Hant">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>博瀚文理 - 英文單字練習</title>
+    <style>
+        body { font-family: "Microsoft JhengHei", sans-serif; text-align: center; background-color: #f4f7f6; padding: 20px; }
+        .container { max-width: 500px; margin: auto; background: white; padding: 20px; border-radius: 15px; box-shadow: 0 4px 8px rgba(0,0,0,0.1); }
+        .card { border: 3px solid #007bff; border-radius: 15px; padding: 20px; margin: 20px auto; min-height: 250px; cursor: pointer; display: flex; flex-direction: column; align-items: center; justify-content: center; background-color: #fff; transition: transform 0.2s; }
+        .card:active { transform: scale(0.98); }
+        img { max-width: 200px; max-height: 150px; margin-bottom: 15px; border-radius: 8px; }
+        h1 { margin: 10px 0; color: #333; }
+        button { background-color: #007bff; color: white; border: none; padding: 12px 25px; font-size: 18px; border-radius: 25px; cursor: pointer; margin: 5px; }
+        button:hover { background-color: #0056b3; }
+        .footer { font-size: 13px; color: #888; margin-top: 30px; border-top: 1px solid #eee; padding-top: 10px; }
+        #loading { font-size: 18px; color: #666; }
+    </style>
+</head>
+<body>
+
+    <div class="container">
+        <h2>博瀚英文單字卡</h2>
+        
+        <div id="loading">讀取題庫中...</div>
+        
+        <div id="game-area" style="display:none;">
+            <div class="card" onclick="flipCard()">
+                <div id="card-content">
+                    </div>
+            </div>
+            <button onclick="prevQuestion()">上一題</button>
+            <button onclick="nextQuestion()">下一題</button>
+        </div>
+
+        <div class="footer">博瀚文理曾益慧老師整理</div>
+    </div>
+
+    <script>
+        // 1. 請填入你 Google Sheets 發佈後的 CSV 連結
+        const SHEET_URL = '你的_GOOGLE_SHEET_CSV_連結'; 
+
+        let vocabulary = [];
+        let currentIndex = 0;
+        let isFlipped = false;
+
+        async function loadData() {
+            try {
+                const response = await fetch(SHEET_URL);
+                const data = await response.text();
+                const rows = data.split('\n').slice(1);
+                
+                vocabulary = rows.map(row => {
+                    const columns = row.split(',');
+                    return { 
+                        term: columns[0]?.trim(), 
+                        definition: columns[1]?.trim() 
+                    };
+                }).filter(item => item.term);
+
+                document.getElementById('loading').style.display = 'none';
+                document.getElementById('game-area').style.display = 'block';
+                showQuestion();
+                preloadNextImage(); // 預載圖片增進流暢度
+            } catch (error) {
+                document.getElementById('loading').innerText = '讀取失敗，請檢查網路或 CSV 連結。';
+            }
+        }
+
+        function showQuestion() {
+            isFlipped = false;
+            const item = vocabulary[currentIndex];
+            const word = item.term.toLowerCase();
+            const content = document.getElementById('card-content');
+            
+            // 自動對應 images 資料夾下的圖片，若沒圖片會自動隱藏 img 標籤
+            content.innerHTML = `
+                <img src="images/${word}.jpg" onerror="this.style.display='none'">
+                <h1>${item.term}</h1>
+            `;
+        }
+
+        function flipCard() {
+            const item = vocabulary[currentIndex];
+            const content = document.getElementById('card-content');
+            const word = item.term.toLowerCase();
+            
+            if (!isFlipped) {
+                content.innerHTML = `<h1>${item.definition}</h1>`;
+            } else {
+                content.innerHTML = `
+                    <img src="images/${word}.jpg" onerror="this.style.display='none'">
+                    <h1>${item.term}</h1>
+                `;
+            }
+            isFlipped = !isFlipped;
+        }
+
+        function nextQuestion() {
+            currentIndex = (currentIndex + 1) % vocabulary.length;
+            showQuestion();
+            preloadNextImage();
+        }
+
+        function prevQuestion() {
+            currentIndex = (currentIndex - 1 + vocabulary.length) % vocabulary.length;
+            showQuestion();
+        }
+
+        function preloadNextImage() {
+            const nextIndex = (currentIndex + 1) % vocabulary.length;
+            const nextWord = vocabulary[nextIndex].term.toLowerCase();
+            const img = new Image();
+            img.src = `images/${nextWord}.jpg`;
+        }
+
+        loadData();
+    </script>
+</body>
+</html>
