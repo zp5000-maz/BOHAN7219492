@@ -3,83 +3,110 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文單字卡 - 曾老師修正版</title>
+    <title>博瀚英文單字卡 - 學生登入系統</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #252525; }
+        .container { background-color: var(--card); padding: 35px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
+        
+        .login-form { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
+        input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; }
+        input:focus { border-color: var(--primary); outline: none; }
+        
+        .login-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.3s; }
+        .login-btn:hover { background: #2980b9; transform: translateY(-2px); }
+
+        #quiz-app { display: none; }
+        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; overflow: hidden; background: #252525; }
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
-        .options { display: grid; gap: 12px; margin-bottom: 20px; }
-        .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
-        #feedback { height: 35px; margin-bottom: 15px; font-weight: bold; font-size: 24px; }
-        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; min-width: 100px; }
-        .active-nav { background-color: var(--primary); }
-        .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
+        .options { display: grid; gap: 12px; margin: 20px 0; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; }
+        
+        .footer { margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loading-screen">連線至博瀚資料庫...</div>
-    <div id="main-content" style="display:none;">
-        <div style="display:flex; justify-content:space-between; color:#888; font-size:14px; margin-bottom:10px;">
-            <span id="mode-text">第一關：看圖識字</span>
-            <span id="progress-text">1 / 1</span>
+    <div id="login-screen">
+        <h2 style="color:var(--primary); margin-bottom:10px;">博瀚文理單字練習</h2>
+        <p style="color:#aaa;">請輸入您的中文名字與密碼</p>
+        <div class="login-form">
+            <input type="text" id="student-login-name" placeholder="中文姓名" autocomplete="off">
+            <input type="password" id="student-login-pass" placeholder="登入密碼">
+            <button class="login-btn" onclick="handleLogin()">登入</button>
         </div>
-        <h2 style="color:var(--primary); margin-top:0;">博瀚英文單字卡測驗系統</h2>
+        <p id="login-msg" style="color:#e74c3c; margin-top:15px; min-height:24px; font-weight:bold;"></p>
+    </div>
+
+    <div id="quiz-app">
+        <div style="display:flex; justify-content:space-between; font-size:14px; color:#888; margin-bottom:15px;">
+            <span id="display-name">學生：載入中</span>
+            <span id="progress">1 / 1</span>
+        </div>
         <div class="image-box">
-            <img id="word-image" src="" alt="題目圖片">
+            <img id="word-image" src="" alt="單字圖示">
         </div>
         <div id="options-container" class="options"></div>
-        <div id="feedback"></div>
-        <div style="display:flex; justify-content:center; gap:15px;">
-            <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)">上一題</button>
-            <button id="next-btn" class="nav-btn active-nav" onclick="changeQuestion(1)">下一題</button>
-        </div>
+        <div id="feedback" style="height:35px; font-weight:bold; font-size:24px;"></div>
+        <button class="login-btn" style="background:#444; width:100%;" onclick="changeQuestion(1)">下一題</button>
     </div>
+
     <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
 <script>
-    // ⚠️ 曾老師，請確認您的 CSV 網址包含「單字」與「翻譯」這兩欄
-    const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv'; 
+    // ⚠️ 曾老師請更換這兩串 CSV 網址
+    const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv'; 
+    const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv';    
 
+    let userDB = [];
     let wordBank = [];
     let currentIndex = 0;
 
-    function fetchSheetData() {
-        Papa.parse(csvUrl, {
-            download: true,
-            header: true,
-            skipEmptyLines: true,
-            complete: function(results) {
-                // 修正：只保留有單字的列，避免讀取到試算表下方的空白或亂碼
-                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim().length > 0 && item["單字"].length < 20);
-                if(wordBank.length > 0) {
-                    document.getElementById('loading-screen').style.display = 'none';
-                    document.getElementById('main-content').style.display = 'block';
-                    loadQuestion();
-                }
+    function init() {
+        Papa.parse(USER_CSV, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results) => { userDB = results.data; }
+        });
+        Papa.parse(WORD_CSV, {
+            download: true, header: true, skipEmptyLines: true,
+            complete: (results) => { 
+                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== ""); 
             }
         });
+    }
+
+    function handleLogin() {
+        const nameVal = document.getElementById('student-login-name').value.trim();
+        const passVal = document.getElementById('student-login-pass').value.trim();
+        const msg = document.getElementById('login-msg');
+
+        // 比對姓名欄位與密碼
+        const found = userDB.find(u => u["姓名"] === nameVal && u["密碼"] === passVal);
+
+        if (found) {
+            document.getElementById('login-screen').style.display = 'none';
+            document.getElementById('quiz-app').style.display = 'block';
+            document.getElementById('display-name').innerText = `學生：${found["姓名"]}`;
+            loadQuestion();
+        } else {
+            msg.innerText = "❌ 找不到姓名或密碼錯誤";
+        }
     }
 
     function loadQuestion() {
         const item = wordBank[currentIndex];
         const wordEn = item["單字"].trim();
         
-        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
+        document.getElementById('progress').innerText = `${currentIndex + 1} / ${wordBank.length}`;
         document.getElementById('feedback').innerText = "";
         document.getElementById('options-container').innerHTML = "";
 
-        // ★ 修正重點：路徑改為 images/，並強制轉小寫以匹配檔案
-        const imgElement = document.getElementById('word-image');
-        const fileName = wordEn.toLowerCase(); 
-        imgElement.src = `images/${fileName}.jpg`; 
+        // 強制轉小寫去抓 GitHub images 資料夾內的 jpg
+        document.getElementById('word-image').src = `images/${wordEn.toLowerCase()}.jpg`;
 
-        // 產生選項
         let choices = [wordEn];
         let others = wordBank.filter(w => w["單字"] !== wordEn).map(w => w["單字"]);
         others.sort(() => Math.random() - 0.5);
@@ -96,7 +123,9 @@
                 if(text === wordEn) {
                     fb.innerText = "⭕ 正確！";
                     fb.style.color = "#2ecc71";
-                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(wordEn));
+                    const utter = new SpeechSynthesisUtterance(wordEn);
+                    utter.lang = 'en-US';
+                    window.speechSynthesis.speak(utter);
                 } else {
                     fb.innerText = "❌ 再試一次！";
                     fb.style.color = "#e74c3c";
@@ -107,13 +136,11 @@
     }
 
     function changeQuestion(step) {
-        currentIndex += step;
-        if (currentIndex < 0) currentIndex = 0;
-        if (currentIndex >= wordBank.length) currentIndex = 0;
+        currentIndex = (currentIndex + step) % wordBank.length;
         loadQuestion();
     }
 
-    fetchSheetData();
+    init();
 </script>
 </body>
 </html>
