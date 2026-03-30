@@ -3,27 +3,31 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文單字卡 - 學生登入系統</title>
+    <title>博瀚英文單字卡 - 曾老師完整版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background-color: var(--card); padding: 35px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
         
+        /* 登入畫面 */
         .login-form { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
         input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; }
         input:focus { border-color: var(--primary); outline: none; }
-        
         .login-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.3s; }
         .login-btn:hover { background: #2980b9; transform: translateY(-2px); }
 
+        /* 練習畫面 */
         #quiz-app { display: none; }
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; overflow: hidden; background: #252525; }
+        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; overflow: hidden; background: #252525; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .options { display: grid; gap: 12px; margin: 20px 0; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; transition: 0.2s; }
+        .option-btn:active { background: #444; }
         
+        #feedback { height: 35px; font-weight: bold; font-size: 24px; margin-bottom: 10px; }
         .footer { margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
+        #loading-msg { color: var(--primary); font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -33,23 +37,24 @@
         <h2 style="color:var(--primary); margin-bottom:10px;">博瀚文理單字練習</h2>
         <p style="color:#aaa;">請輸入您的中文名字與密碼</p>
         <div class="login-form">
-            <input type="text" id="student-login-name" placeholder="中文姓名" autocomplete="off">
-            <input type="password" id="student-login-pass" placeholder="登入密碼">
-            <button class="login-btn" onclick="handleLogin()">登入</button>
+            <input type="text" id="stu-name" placeholder="中文姓名" autocomplete="off">
+            <input type="password" id="stu-pass" placeholder="登入密碼">
+            <button class="login-btn" onclick="handleLogin()">登入系統</button>
         </div>
-        <p id="login-msg" style="color:#e74c3c; margin-top:15px; min-height:24px; font-weight:bold;"></p>
+        <div id="loading-msg">正在連線雲端資料庫...</div>
+        <p id="login-err" style="color:#e74c3c; margin-top:15px; min-height:24px; font-weight:bold;"></p>
     </div>
 
     <div id="quiz-app">
         <div style="display:flex; justify-content:space-between; font-size:14px; color:#888; margin-bottom:15px;">
-            <span id="display-name">學生：載入中</span>
+            <span id="display-user">學生：載入中</span>
             <span id="progress">1 / 1</span>
         </div>
         <div class="image-box">
             <img id="word-image" src="" alt="單字圖示">
         </div>
         <div id="options-container" class="options"></div>
-        <div id="feedback" style="height:35px; font-weight:bold; font-size:24px;"></div>
+        <div id="feedback"></div>
         <button class="login-btn" style="background:#444; width:100%;" onclick="changeQuestion(1)">下一題</button>
     </div>
 
@@ -65,11 +70,17 @@
     let wordBank = [];
     let currentIndex = 0;
 
+    // 初始化：同步讀取兩份資料
     function init() {
+        // 讀取名單
         Papa.parse(USER_CSV, {
             download: true, header: true, skipEmptyLines: true,
-            complete: (results) => { userDB = results.data; }
+            complete: (results) => { 
+                userDB = results.data; 
+                document.getElementById('loading-msg').innerText = "資料庫連線成功！";
+            }
         });
+        // 讀取單字
         Papa.parse(WORD_CSV, {
             download: true, header: true, skipEmptyLines: true,
             complete: (results) => { 
@@ -78,24 +89,35 @@
         });
     }
 
+    // 登入邏輯
     function handleLogin() {
-        const nameVal = document.getElementById('student-login-name').value.trim();
-        const passVal = document.getElementById('student-login-pass').value.trim();
-        const msg = document.getElementById('login-msg');
+        const inputName = document.getElementById('stu-name').value.trim();
+        const inputPass = document.getElementById('stu-pass').value.trim();
+        const errDisplay = document.getElementById('login-err');
 
-        // 比對姓名欄位與密碼
-        const found = userDB.find(u => u["姓名"] === nameVal && u["密碼"] === passVal);
+        if (userDB.length === 0) {
+            errDisplay.innerText = "❌ 系統尚未就緒，請等三秒再試一次";
+            return;
+        }
+
+        // 偵錯比對：強力過濾空白與強制轉字串
+        const found = userDB.find(u => {
+            const dbName = String(u["姓名"] || "").trim();
+            const dbPass = String(u["密碼"] || "").trim();
+            return dbName === inputName && dbPass === inputPass;
+        });
 
         if (found) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('quiz-app').style.display = 'block';
-            document.getElementById('display-name').innerText = `學生：${found["姓名"]}`;
+            document.getElementById('display-user').innerText = `學生：${found["姓名"]}`;
             loadQuestion();
         } else {
-            msg.innerText = "❌ 找不到姓名或密碼錯誤";
+            errDisplay.innerText = "❌ 找不到姓名或密碼錯誤";
         }
     }
 
+    // 載入題目
     function loadQuestion() {
         const item = wordBank[currentIndex];
         const wordEn = item["單字"].trim();
@@ -104,9 +126,11 @@
         document.getElementById('feedback').innerText = "";
         document.getElementById('options-container').innerHTML = "";
 
-        // 強制轉小寫去抓 GitHub images 資料夾內的 jpg
-        document.getElementById('word-image').src = `images/${wordEn.toLowerCase()}.jpg`;
+        // 圖片讀取您的 GitHub /images 資料夾
+        const imgPath = `images/${wordEn.toLowerCase()}.jpg`;
+        document.getElementById('word-image').src = imgPath;
 
+        // 產生選項
         let choices = [wordEn];
         let others = wordBank.filter(w => w["單字"] !== wordEn).map(w => w["單字"]);
         others.sort(() => Math.random() - 0.5);
@@ -121,13 +145,13 @@
             btn.onclick = () => {
                 const fb = document.getElementById('feedback');
                 if(text === wordEn) {
-                    fb.innerText = "⭕ 正確！";
+                    fb.innerText = "⭕ Correct!";
                     fb.style.color = "#2ecc71";
-                    const utter = new SpeechSynthesisUtterance(wordEn);
-                    utter.lang = 'en-US';
-                    window.speechSynthesis.speak(utter);
+                    const speak = new SpeechSynthesisUtterance(wordEn);
+                    speak.lang = 'en-US';
+                    window.speechSynthesis.speak(speak);
                 } else {
-                    fb.innerText = "❌ 再試一次！";
+                    fb.innerText = "❌ Try Again!";
                     fb.style.color = "#e74c3c";
                 }
             };
