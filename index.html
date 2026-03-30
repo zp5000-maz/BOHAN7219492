@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文單字卡 - GitHub 修正版</title>
+    <title>博瀚英文單字卡 - 曾老師修正版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
@@ -13,8 +13,8 @@
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .options { display: grid; gap: 12px; margin-bottom: 20px; }
         .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
-        #feedback { height: 30px; margin-bottom: 15px; font-weight: bold; font-size: 22px; }
-        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; }
+        #feedback { height: 35px; margin-bottom: 15px; font-weight: bold; font-size: 24px; }
+        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; min-width: 100px; }
         .active-nav { background-color: var(--primary); }
         .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
     </style>
@@ -22,15 +22,15 @@
 <body>
 
 <div class="container">
-    <div id="loading-screen">讀取博瀚雲端單字庫...</div>
+    <div id="loading-screen">連線至博瀚資料庫...</div>
     <div id="main-content" style="display:none;">
         <div style="display:flex; justify-content:space-between; color:#888; font-size:14px; margin-bottom:10px;">
             <span id="mode-text">第一關：看圖識字</span>
-            <span id="progress-text">1/10</span>
+            <span id="progress-text">1 / 1</span>
         </div>
-        <h2>博瀚英文單字卡</h2>
+        <h2 style="color:var(--primary); margin-top:0;">博瀚英文單字卡</h2>
         <div class="image-box">
-            <img id="word-image" src="" alt="題目圖片" onerror="handleImageError(this)">
+            <img id="word-image" src="" alt="題目圖片">
         </div>
         <div id="options-container" class="options"></div>
         <div id="feedback"></div>
@@ -43,25 +43,20 @@
 </div>
 
 <script>
+    // ⚠️ 曾老師，請確認您的 CSV 網址包含「單字」與「翻譯」這兩欄
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv'; 
+
     let wordBank = [];
     let currentIndex = 0;
-    let currentMode = 1;
-
-    // 當 GitHub 圖片讀取失敗時的處理
-    function handleImageError(img) {
-        const word = wordBank[currentIndex]["單字"].trim().toLowerCase();
-        console.log("GitHub 圖片讀取失敗，改用備援圖庫：" + word);
-        // 如果 GitHub 找不到，改用線上圖庫當備援，確保學生不會看到破圖
-        img.src = `https://loremflickr.com/500/350/${word}`;
-    }
 
     function fetchSheetData() {
         Papa.parse(csvUrl, {
             download: true,
             header: true,
+            skipEmptyLines: true,
             complete: function(results) {
-                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== "");
+                // 修正：只保留有單字的列，避免讀取到試算表下方的空白或亂碼
+                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim().length > 0 && item["單字"].length < 20);
                 if(wordBank.length > 0) {
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('main-content').style.display = 'block';
@@ -74,19 +69,17 @@
     function loadQuestion() {
         const item = wordBank[currentIndex];
         const wordEn = item["單字"].trim();
-        const wordZh = item["翻譯"] ? item["翻譯"].trim() : "未提供翻譯";
         
         document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
         document.getElementById('feedback').innerText = "";
         document.getElementById('options-container').innerHTML = "";
 
-        const img = document.getElementById('word-image');
-        
-        // ★ 關鍵：GitHub 讀取路徑
-        // 建議老師把所有圖都改成 .jpg 結尾
-        const cleanWord = wordEn.toLowerCase();
-        img.src = `img/${cleanWord}.jpg`; 
+        // ★ 修正重點：路徑改為 images/，並強制轉小寫以匹配檔案
+        const imgElement = document.getElementById('word-image');
+        const fileName = wordEn.toLowerCase(); 
+        imgElement.src = `images/${fileName}.jpg`; 
 
+        // 產生選項
         let choices = [wordEn];
         let others = wordBank.filter(w => w["單字"] !== wordEn).map(w => w["單字"]);
         others.sort(() => Math.random() - 0.5);
@@ -101,11 +94,11 @@
             btn.onclick = () => {
                 const fb = document.getElementById('feedback');
                 if(text === wordEn) {
-                    fb.innerText = "⭕ Excellent!";
+                    fb.innerText = "⭕ 正確！";
                     fb.style.color = "#2ecc71";
                     window.speechSynthesis.speak(new SpeechSynthesisUtterance(wordEn));
                 } else {
-                    fb.innerText = "❌ Try Again!";
+                    fb.innerText = "❌ 再試一次！";
                     fb.style.color = "#e74c3c";
                 }
             };
