@@ -3,165 +3,135 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文單字卡 - 曾老師完整版</title>
+    <title>博瀚英文單字卡 - 曾老師最終修正版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background-color: var(--card); padding: 35px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        
-        /* 登入畫面 */
+        .container { background-color: var(--card); padding: 30px; border-radius: 20px; width: 90%; max-width: 400px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
         .login-form { display: flex; flex-direction: column; gap: 15px; margin-top: 25px; }
         input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; }
-        input:focus { border-color: var(--primary); outline: none; }
-        .login-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; transition: 0.3s; }
-        .login-btn:hover { background: #2980b9; transform: translateY(-2px); }
-
-        /* 練習畫面 */
+        .login-btn { background: var(--primary); color: white; border: none; padding: 14px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
         #quiz-app { display: none; }
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; overflow: hidden; background: #252525; box-shadow: inset 0 0 10px rgba(0,0,0,0.5); }
+        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; overflow: hidden; background: #252525; }
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .options { display: grid; gap: 12px; margin: 20px 0; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; transition: 0.2s; }
-        .option-btn:active { background: #444; }
-        
-        #feedback { height: 35px; font-weight: bold; font-size: 24px; margin-bottom: 10px; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; }
         .footer { margin-top: 30px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
-        #loading-msg { color: var(--primary); font-size: 14px; margin-top: 10px; }
     </style>
 </head>
 <body>
 
 <div class="container">
     <div id="login-screen">
-        <h2 style="color:var(--primary); margin-bottom:10px;">博瀚文理單字練習</h2>
-        <p style="color:#aaa;">請輸入您的中文名字與密碼</p>
+        <h2 style="color:var(--primary);">博瀚文理單字練習</h2>
         <div class="login-form">
-            <input type="text" id="stu-name" placeholder="中文姓名" autocomplete="off">
-            <input type="password" id="stu-pass" placeholder="登入密碼">
-            <button class="login-btn" onclick="handleLogin()">登入系統</button>
+            <input type="text" id="input-name" placeholder="請輸入姓名" autocomplete="off">
+            <input type="password" id="input-pass" placeholder="請輸入密碼">
+            <button class="login-btn" onclick="handleLogin()">登入</button>
         </div>
-        <div id="loading-msg">正在連線雲端資料庫...</div>
-        <p id="login-err" style="color:#e74c3c; margin-top:15px; min-height:24px; font-weight:bold;"></p>
+        <p id="err-msg" style="color:#e74c3c; margin-top:15px; font-weight:bold;"></p>
     </div>
 
     <div id="quiz-app">
         <div style="display:flex; justify-content:space-between; font-size:14px; color:#888; margin-bottom:15px;">
-            <span id="display-user">學生：載入中</span>
-            <span id="progress">1 / 1</span>
+            <span id="user-display"></span>
+            <span id="progress-display"></span>
         </div>
         <div class="image-box">
-            <img id="word-image" src="" alt="單字圖示">
+            <img id="main-img" src="">
         </div>
-        <div id="options-container" class="options"></div>
-        <div id="feedback"></div>
-        <button class="login-btn" style="background:#444; width:100%;" onclick="changeQuestion(1)">下一題</button>
+        <div id="options-box" class="options"></div>
+        <div id="fb-text" style="height:35px; font-weight:bold; font-size:22px;"></div>
+        <button class="login-btn" style="background:#444; width:100%;" onclick="nextQ()">下一題</button>
     </div>
-
     <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
 <script>
-    // ⚠️ 曾老師請更換這兩串 CSV 網址
-    const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
-    const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv';    
+    // 曾老師您的網址已經幫您填入
+    const USER_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv';
+    const WORD_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv';
 
-    let userDB = [];
-    let wordBank = [];
-    let currentIndex = 0;
+    let users = [];
+    let words = [];
+    let qIdx = 0;
 
-    // 初始化：同步讀取兩份資料
     function init() {
-        // 讀取名單
-        Papa.parse(USER_CSV, {
+        Papa.parse(USER_URL, {
             download: true, header: true, skipEmptyLines: true,
-            complete: (results) => { 
-                userDB = results.data; 
-                document.getElementById('loading-msg').innerText = "資料庫連線成功！";
-            }
+            complete: (r) => { users = r.data; console.log("名單載入成功"); }
         });
-        // 讀取單字
-        Papa.parse(WORD_CSV, {
+        Papa.parse(WORD_URL, {
             download: true, header: true, skipEmptyLines: true,
-            complete: (results) => { 
-                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== ""); 
-            }
+            complete: (r) => { words = r.data.filter(i => i["單字"]); }
         });
     }
 
-    // 登入邏輯
     function handleLogin() {
-        const inputName = document.getElementById('stu-name').value.trim();
-        const inputPass = document.getElementById('stu-pass').value.trim();
-        const errDisplay = document.getElementById('login-err');
-
-        if (userDB.length === 0) {
-            errDisplay.innerText = "❌ 系統尚未就緒，請等三秒再試一次";
-            return;
-        }
-
-        // 偵錯比對：強力過濾空白與強制轉字串
-        const found = userDB.find(u => {
-            const dbName = String(u["姓名"] || "").trim();
-            const dbPass = String(u["密碼"] || "").trim();
-            return dbName === inputName && dbPass === inputPass;
+        const n = document.getElementById('input-name').value.trim();
+        const p = document.getElementById('input-pass').value.trim();
+        
+        // 強化比對邏輯：遍歷所有欄位名稱，避免因為空格找不到「姓名」或「密碼」
+        const user = users.find(u => {
+            // 自動找尋名稱包含「姓名」與「密碼」的欄位值
+            let dbN = "";
+            let dbP = "";
+            for(let key in u) {
+                if(key.includes("姓名")) dbN = String(u[key]).trim();
+                if(key.includes("密碼")) dbP = String(u[key]).trim();
+            }
+            return dbN === n && dbP === p;
         });
 
-        if (found) {
+        if (user) {
             document.getElementById('login-screen').style.display = 'none';
             document.getElementById('quiz-app').style.display = 'block';
-            document.getElementById('display-user').innerText = `學生：${found["姓名"]}`;
-            loadQuestion();
+            document.getElementById('user-display').innerText = `學生：${n}`;
+            showQ();
         } else {
-            errDisplay.innerText = "❌ 找不到姓名或密碼錯誤";
+            document.getElementById('err-msg').innerText = "❌ 姓名或密碼不正確";
         }
     }
 
-    // 載入題目
-    function loadQuestion() {
-        const item = wordBank[currentIndex];
-        const wordEn = item["單字"].trim();
+    function showQ() {
+        const item = words[qIdx];
+        const correct = item["單字"].trim();
+        document.getElementById('progress-display').innerText = `${qIdx + 1} / ${words.length}`;
+        document.getElementById('fb-text').innerText = "";
+        document.getElementById('options-box').innerHTML = "";
         
-        document.getElementById('progress').innerText = `${currentIndex + 1} / ${wordBank.length}`;
-        document.getElementById('feedback').innerText = "";
-        document.getElementById('options-container').innerHTML = "";
+        // 顯示圖片
+        document.getElementById('main-img').src = `images/${correct.toLowerCase()}.jpg`;
 
-        // 圖片讀取您的 GitHub /images 資料夾
-        const imgPath = `images/${wordEn.toLowerCase()}.jpg`;
-        document.getElementById('word-image').src = imgPath;
-
-        // 產生選項
-        let choices = [wordEn];
-        let others = wordBank.filter(w => w["單字"] !== wordEn).map(w => w["單字"]);
+        // 選項隨機
+        let opts = [correct];
+        let others = words.filter(w => w["單字"] !== correct).map(w => w["單字"]);
         others.sort(() => Math.random() - 0.5);
-        if(others[0]) choices.push(others[0]);
-        if(others[1]) choices.push(others[1]);
-        choices.sort(() => Math.random() - 0.5);
+        if(others[0]) opts.push(others[0]);
+        if(others[1]) opts.push(others[1]);
+        opts.sort(() => Math.random() - 0.5);
 
-        choices.forEach(text => {
-            const btn = document.createElement('button');
-            btn.className = "option-btn";
-            btn.innerText = text;
-            btn.onclick = () => {
-                const fb = document.getElementById('feedback');
-                if(text === wordEn) {
-                    fb.innerText = "⭕ Correct!";
-                    fb.style.color = "#2ecc71";
-                    const speak = new SpeechSynthesisUtterance(wordEn);
-                    speak.lang = 'en-US';
-                    window.speechSynthesis.speak(speak);
+        opts.forEach(t => {
+            const b = document.createElement('button');
+            b.className = "option-btn";
+            b.innerText = t;
+            b.onclick = () => {
+                const fb = document.getElementById('fb-text');
+                if(t === correct) {
+                    fb.innerText = "⭕ 正確！"; fb.style.color = "#2ecc71";
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(correct));
                 } else {
-                    fb.innerText = "❌ Try Again!";
-                    fb.style.color = "#e74c3c";
+                    fb.innerText = "❌ 錯囉！"; fb.style.color = "#e74c3c";
                 }
             };
-            document.getElementById('options-container').appendChild(btn);
+            document.getElementById('options-box').appendChild(b);
         });
     }
 
-    function changeQuestion(step) {
-        currentIndex = (currentIndex + step) % wordBank.length;
-        loadQuestion();
+    function nextQ() {
+        qIdx = (qIdx + 1) % words.length;
+        showQ();
     }
 
     init();
