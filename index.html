@@ -91,3 +91,182 @@
         let word = item["單字"].trim().toLowerCase(); // 自動轉小寫確保匹配
         // 指向您 GitHub 儲存庫根目錄下的 img 資料夾
         // 預設副檔名為 .jpg。如果您大部份是 .png，請將此處改為 .png
+        return `img/${word}.jpg`; 
+    }
+
+    // 優化：預載後續 3 張圖片，讓切換題目時「秒出」
+    function preloadNextImages(index) {
+        if (currentMode !== 1) return; // 只有第一關需要圖片
+        for (let i = 1; i <= 3; i++) {
+            let nextIndex = index + i;
+            if (nextIndex < wordBank.length) {
+                const url = getGithubImgUrl(wordBank[nextIndex]);
+                if (url && !preloadedImages[url]) {
+                    const img = new Image();
+                    img.src = url;
+                    preloadedImages[url] = true;
+                }
+            }
+        }
+    }
+
+    // 初始化：讀取試算表資料
+    function fetchSheetData() {
+        Papa.parse(csvUrl, {
+            download: true,
+            header: true, // 自動讀取標題列
+            complete: function(results) {
+                // 過濾掉空行，確保資料有效
+                wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== "");
+                if(wordBank.length > 0) {
+                    // 隱藏載入畫面，顯示主畫面
+                    document.getElementById('loading-screen').style.display = 'none';
+                    document.getElementById('main-content').style.display = 'block';
+                    loadQuestion();
+                } else {
+                    document.getElementById('loading-screen').innerText = '讀取成功但無資料，請檢查試算表標題是否為：單字、翻譯';
+                }
+            },
+            error: () => document.getElementById('loading-screen').innerText = '網路連線失敗，請檢查 CSV 網址'
+        });
+    }
+
+    // 載入題目核心邏輯
+    function loadQuestion() {
+        if (currentIndex >= wordBank.length) {
+            handleEndOfMode();
+            return;
+        }
+
+        const item = wordBank[currentIndex];
+        const wordEn = item["單字"].trim();
+        // 如果試算表沒填翻譯，顯示提示文字
+        const wordZh = item["翻譯"] ? item["翻譯"].trim() : "未提供翻譯";
+        
+        // 更新進度與清除回饋
+        document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
+        document.getElementById('feedback').innerText = "";
+        document.getElementById('options-container').innerHTML = "";
+
+        const imgElement = document.getElementById('word-image');
+        const imgContainer = document.getElementById('img-container');
+        const textContainer = document.getElementById('text-container');
+        
+        // 根據關卡模式切換顯示內容
+        if (currentMode === 1) {
+            document.getElementById('mode-text').innerText = "第一關：看圖識字";
+            imgContainer.style.display = "flex";
+            textContainer.style.display = "none";
+            // ★ 自動設定 GitHub 圖片網址
+            imgElement.src = getGithubImgUrl(item);
+            // 啟動圖片預載
+            preloadNextImages(currentIndex);
+            // 設定選項：正確答案是英文
+            setupOptions(wordEn, "en");
+        } else if (currentMode === 2) {
+            document.getElementById('mode-text').innerText = "第二關：中翻英";
+            imgContainer.style.display = "none";
+            textContainer.style.display = "flex";
+            textContainer.innerText = wordZh; // 題目顯示中文
+            // 設定選項：正確答案是英文
+            setupOptions(wordEn, "en");
+        } else {
+            document.getElementById('mode-text').innerText = "第三關：英翻中";
+            imgContainer.style.display = "none";
+            textContainer.style.display = "flex";
+            textContainer.innerText = wordEn; // 題目顯示英文
+            // 設定選項：正確答案是中文
+            setupOptions(wordZh, "zh");
+        }
+
+        // 更新導覽按鈕狀態 (第一題不能按「上一題」)
+        document.getElementById('prev-btn').classList.toggle('active-nav', currentIndex !== 0);
+    }
+
+    // 產生三個選項 (1 個正確 + 2 個隨機錯誤)
+    function setupOptions(correctAnswer, type) {
+        const container = document.getElementById('options-container');
+        let choices = [correctAnswer];
+        
+        // 從單字庫隨機挑兩個錯誤答案
+        let others = wordBank.filter(w => {
+            let val = (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : "");
+            return val !== correctAnswer;
+        }).map(w => (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : ""));
+
+        // 亂數排列錯誤答案並取前兩個
+        others.sort(() => Math.random() - 0.5);
+        if(others[0]) choices.push(others[0]);
+        if(others[1]) choices.push(others[1]);
+        
+        // 如果單字庫太少，補足三個選項
+        while(choices.length < 3) choices.push(type === "en" ? "Practice" : "練習中");
+        
+        // 選項亂數排列
+        choices.sort(() => Math.random() - 0.5);
+
+        // 生成按鈕
+        choices.forEach(text => {
+            const btn = document.createElement('button');
+            btn.className = "option-btn";
+            btn.innerText = text;
+            btn.onclick = () => checkAnswer(text, correctAnswer, type);
+            container.appendChild(btn);
+        });
+    }
+
+    // 檢查答案與回饋機制
+    function checkAnswer(selected, correct, type) {
+        const fb = document.getElementById('feedback');
+        if(selected === correct) {
+            fb.innerText = "⭕ Excellent!";
+            fb.style.color = "#2ecc71"; // 成功綠色
+            // 答對時自動播放發音 (一定是讀英文單字)
+            const speechWord = (type === "en") ? correct : wordBank[currentIndex]["單字"];
+            const utter = new SpeechSynthesisUtterance(speechWord);
+            utter.lang = 'en-US';
+            window.speechSynthesis.speak(utter);
+            
+            // 選項按鈕變灰色防止重按
+            const btns = document.querySelectorAll('.option-btn');
+            btns.forEach(b => b.style.opacity = "0.6");
+        } else {
+            fb.innerText = "❌ Try Again!";
+            fb.style.color = "#e74c3c"; // 失敗紅色
+            // 語音回饋播放錯誤音效 (瀏覽器限制音效播放，此處暫省略)
+        }
+    }
+
+    // 處理關卡結束後的切換
+    function handleEndOfMode() {
+        if (currentMode < 3) {
+            currentMode++;
+            currentIndex = 0;
+            const nextModeName = currentMode === 2 ? '第二關：中翻英' : '第三關：英翻中';
+            alert(`恭喜完成！接下來進入 ${nextModeName}`);
+            loadQuestion();
+        } else {
+            alert("太棒了！三種模式都挑戰成功！即將回到第一題。");
+            currentIndex = 0;
+            currentMode = 1;
+            loadQuestion();
+        }
+    }
+
+    // 切換題目
+    function changeQuestion(step) {
+        let nextIndex = currentIndex + step;
+        
+        if (nextIndex < 0) {
+            currentIndex = 0;
+        } else {
+            currentIndex = nextIndex;
+        }
+        loadQuestion();
+    }
+
+    // 啟動程式：讀取資料
+    fetchSheetData();
+</script>
+</body>
+</html>
