@@ -3,269 +3,123 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文單字卡 - GitHub 專用版</title>
+    <title>博瀚英文單字卡 - GitHub 修正版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); border: 1px solid #333; }
-        
-        /* 模式與題數資訊 */
-        .info-bar { display: flex; justify-content: space-between; font-size: 14px; color: #888; margin-bottom: 10px; }
-        h2 { margin: 0 0 15px 0; font-weight: normal; color: var(--primary); font-size: 24px; border-bottom: 2px solid #333; padding-bottom: 10px; }
-
-        /* 題目顯示區 (圖片或文字) */
-        .quiz-display { min-height: 260px; display: flex; justify-content: center; align-items: center; margin-bottom: 20px; }
-        
-        /* 圖片容器：博瀚藍色外框 */
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #252525; box-shadow: inset 0 0 15px rgba(0,0,0,0.5); }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; transition: opacity 0.3s; }
-        
-        /* 文字題目 (中翻英/英翻中) */
-        .question-text { font-size: 42px; font-weight: bold; color: white; text-shadow: 0 2px 4px rgba(0,0,0,0.5); }
-
-        /* 選項按鈕 */
+        .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 20px; display: flex; justify-content: center; align-items: center; overflow: hidden; background: #252525; }
+        .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .options { display: grid; gap: 12px; margin-bottom: 20px; }
-        .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; cursor: pointer; font-size: 19px; transition: 0.2s; box-shadow: 0 2px 4px rgba(0,0,0,0.2); }
-        .option-btn:hover { border-color: var(--primary); background-color: #252525; transform: translateY(-2px); }
-        .option-btn:active { transform: translateY(1px); }
-
-        /* 回饋文字 (對/錯) */
-        #feedback { height: 35px; margin-bottom: 15px; font-weight: bold; font-size: 24px; display: flex; justify-content: center; align-items: center; }
-
-        /* 下方導覽按鈕 */
-        .nav-buttons { display: flex; justify-content: center; gap: 15px; }
-        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 28px; border-radius: 25px; font-size: 16px; cursor: pointer; min-width: 110px; transition: 0.3s; }
-        .active-nav { background-color: var(--primary); box-shadow: 0 2px 6px rgba(52, 152, 219, 0.4); }
-        .active-nav:hover { background-color: #2980b9; }
-
+        .option-btn { background-color: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
+        #feedback { height: 30px; margin-bottom: 15px; font-weight: bold; font-size: 22px; }
+        .nav-btn { background-color: #444; color: white; border: none; padding: 12px 25px; border-radius: 25px; cursor: pointer; }
+        .active-nav { background-color: var(--primary); }
         .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
-        #loading-screen { font-size: 18px; color: var(--primary); }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="loading-screen">連線至博瀚雲端資料庫...</div>
-
+    <div id="loading-screen">讀取博瀚雲端單字庫...</div>
     <div id="main-content" style="display:none;">
-        <div class="info-bar">
+        <div style="display:flex; justify-content:space-between; color:#888; font-size:14px; margin-bottom:10px;">
             <span id="mode-text">第一關：看圖識字</span>
-            <span id="progress-text">1 / 10</span>
+            <span id="progress-text">1/10</span>
         </div>
         <h2>博瀚英文單字卡</h2>
-
-        <div class="quiz-display">
-            <div id="img-container" class="image-box">
-                <img id="word-image" src="" alt="題目圖片">
-            </div>
-            <div id="text-container" class="question-text" style="display:none;"></div>
+        <div class="image-box">
+            <img id="word-image" src="" alt="題目圖片" onerror="handleImageError(this)">
         </div>
-
         <div id="options-container" class="options"></div>
-
         <div id="feedback"></div>
-
-        <div class="nav-buttons">
+        <div style="display:flex; justify-content:center; gap:15px;">
             <button id="prev-btn" class="nav-btn" onclick="changeQuestion(-1)">上一題</button>
             <button id="next-btn" class="nav-btn active-nav" onclick="changeQuestion(1)">下一題</button>
         </div>
     </div>
-
     <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
 <script>
-    // ⚠️ 曾老師，請在此處貼上您的 Google 試算表 CSV 網址
     const csvUrl = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?output=csv'; 
+    let wordBank = [];
+    let currentIndex = 0;
+    let currentMode = 1;
 
-    let wordBank = []; // 存放所有單字資料
-    let currentIndex = 0; // 目前題目索引
-    let currentMode = 1; // 1:看圖選英, 2:中翻英, 3:英翻中
-    let preloadedImages = {}; // 存放預載圖片
-
-    // ★ 關鍵優化：自動匹配 GitHub 上的圖片
-    // 假設圖片放在 img 資料夾，檔名為小寫單字.jpg
-    function getGithubImgUrl(item) {
-        if (!item || !item["單字"]) return "";
-        let word = item["單字"].trim().toLowerCase(); // 自動轉小寫確保匹配
-        // 指向您 GitHub 儲存庫根目錄下的 img 資料夾
-        // 預設副檔名為 .jpg。如果您大部份是 .png，請將此處改為 .png
-        return `img/${word}.jpg`; 
+    // 當 GitHub 圖片讀取失敗時的處理
+    function handleImageError(img) {
+        const word = wordBank[currentIndex]["單字"].trim().toLowerCase();
+        console.log("GitHub 圖片讀取失敗，改用備援圖庫：" + word);
+        // 如果 GitHub 找不到，改用線上圖庫當備援，確保學生不會看到破圖
+        img.src = `https://loremflickr.com/500/350/${word}`;
     }
 
-    // 優化：預載後續 3 張圖片，讓切換題目時「秒出」
-    function preloadNextImages(index) {
-        if (currentMode !== 1) return; // 只有第一關需要圖片
-        for (let i = 1; i <= 3; i++) {
-            let nextIndex = index + i;
-            if (nextIndex < wordBank.length) {
-                const url = getGithubImgUrl(wordBank[nextIndex]);
-                if (url && !preloadedImages[url]) {
-                    const img = new Image();
-                    img.src = url;
-                    preloadedImages[url] = true;
-                }
-            }
-        }
-    }
-
-    // 初始化：讀取試算表資料
     function fetchSheetData() {
         Papa.parse(csvUrl, {
             download: true,
-            header: true, // 自動讀取標題列
+            header: true,
             complete: function(results) {
-                // 過濾掉空行，確保資料有效
                 wordBank = results.data.filter(item => item["單字"] && item["單字"].trim() !== "");
                 if(wordBank.length > 0) {
-                    // 隱藏載入畫面，顯示主畫面
                     document.getElementById('loading-screen').style.display = 'none';
                     document.getElementById('main-content').style.display = 'block';
                     loadQuestion();
-                } else {
-                    document.getElementById('loading-screen').innerText = '讀取成功但無資料，請檢查試算表標題是否為：單字、翻譯';
                 }
-            },
-            error: () => document.getElementById('loading-screen').innerText = '網路連線失敗，請檢查 CSV 網址'
+            }
         });
     }
 
-    // 載入題目核心邏輯
     function loadQuestion() {
-        if (currentIndex >= wordBank.length) {
-            handleEndOfMode();
-            return;
-        }
-
         const item = wordBank[currentIndex];
         const wordEn = item["單字"].trim();
-        // 如果試算表沒填翻譯，顯示提示文字
         const wordZh = item["翻譯"] ? item["翻譯"].trim() : "未提供翻譯";
         
-        // 更新進度與清除回饋
         document.getElementById('progress-text').innerText = `${currentIndex + 1} / ${wordBank.length}`;
         document.getElementById('feedback').innerText = "";
         document.getElementById('options-container').innerHTML = "";
 
-        const imgElement = document.getElementById('word-image');
-        const imgContainer = document.getElementById('img-container');
-        const textContainer = document.getElementById('text-container');
+        const img = document.getElementById('word-image');
         
-        // 根據關卡模式切換顯示內容
-        if (currentMode === 1) {
-            document.getElementById('mode-text').innerText = "第一關：看圖識字";
-            imgContainer.style.display = "flex";
-            textContainer.style.display = "none";
-            // ★ 自動設定 GitHub 圖片網址
-            imgElement.src = getGithubImgUrl(item);
-            // 啟動圖片預載
-            preloadNextImages(currentIndex);
-            // 設定選項：正確答案是英文
-            setupOptions(wordEn, "en");
-        } else if (currentMode === 2) {
-            document.getElementById('mode-text').innerText = "第二關：中翻英";
-            imgContainer.style.display = "none";
-            textContainer.style.display = "flex";
-            textContainer.innerText = wordZh; // 題目顯示中文
-            // 設定選項：正確答案是英文
-            setupOptions(wordEn, "en");
-        } else {
-            document.getElementById('mode-text').innerText = "第三關：英翻中";
-            imgContainer.style.display = "none";
-            textContainer.style.display = "flex";
-            textContainer.innerText = wordEn; // 題目顯示英文
-            // 設定選項：正確答案是中文
-            setupOptions(wordZh, "zh");
-        }
+        // ★ 關鍵：GitHub 讀取路徑
+        // 建議老師把所有圖都改成 .jpg 結尾
+        const cleanWord = wordEn.toLowerCase();
+        img.src = `img/${cleanWord}.jpg`; 
 
-        // 更新導覽按鈕狀態 (第一題不能按「上一題」)
-        document.getElementById('prev-btn').classList.toggle('active-nav', currentIndex !== 0);
-    }
-
-    // 產生三個選項 (1 個正確 + 2 個隨機錯誤)
-    function setupOptions(correctAnswer, type) {
-        const container = document.getElementById('options-container');
-        let choices = [correctAnswer];
-        
-        // 從單字庫隨機挑兩個錯誤答案
-        let others = wordBank.filter(w => {
-            let val = (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : "");
-            return val !== correctAnswer;
-        }).map(w => (type === "en") ? w["單字"].trim() : (w["翻譯"] ? w["翻譯"].trim() : ""));
-
-        // 亂數排列錯誤答案並取前兩個
+        let choices = [wordEn];
+        let others = wordBank.filter(w => w["單字"] !== wordEn).map(w => w["單字"]);
         others.sort(() => Math.random() - 0.5);
         if(others[0]) choices.push(others[0]);
         if(others[1]) choices.push(others[1]);
-        
-        // 如果單字庫太少，補足三個選項
-        while(choices.length < 3) choices.push(type === "en" ? "Practice" : "練習中");
-        
-        // 選項亂數排列
         choices.sort(() => Math.random() - 0.5);
 
-        // 生成按鈕
         choices.forEach(text => {
             const btn = document.createElement('button');
             btn.className = "option-btn";
             btn.innerText = text;
-            btn.onclick = () => checkAnswer(text, correctAnswer, type);
-            container.appendChild(btn);
+            btn.onclick = () => {
+                const fb = document.getElementById('feedback');
+                if(text === wordEn) {
+                    fb.innerText = "⭕ Excellent!";
+                    fb.style.color = "#2ecc71";
+                    window.speechSynthesis.speak(new SpeechSynthesisUtterance(wordEn));
+                } else {
+                    fb.innerText = "❌ Try Again!";
+                    fb.style.color = "#e74c3c";
+                }
+            };
+            document.getElementById('options-container').appendChild(btn);
         });
     }
 
-    // 檢查答案與回饋機制
-    function checkAnswer(selected, correct, type) {
-        const fb = document.getElementById('feedback');
-        if(selected === correct) {
-            fb.innerText = "⭕ Excellent!";
-            fb.style.color = "#2ecc71"; // 成功綠色
-            // 答對時自動播放發音 (一定是讀英文單字)
-            const speechWord = (type === "en") ? correct : wordBank[currentIndex]["單字"];
-            const utter = new SpeechSynthesisUtterance(speechWord);
-            utter.lang = 'en-US';
-            window.speechSynthesis.speak(utter);
-            
-            // 選項按鈕變灰色防止重按
-            const btns = document.querySelectorAll('.option-btn');
-            btns.forEach(b => b.style.opacity = "0.6");
-        } else {
-            fb.innerText = "❌ Try Again!";
-            fb.style.color = "#e74c3c"; // 失敗紅色
-            // 語音回饋播放錯誤音效 (瀏覽器限制音效播放，此處暫省略)
-        }
-    }
-
-    // 處理關卡結束後的切換
-    function handleEndOfMode() {
-        if (currentMode < 3) {
-            currentMode++;
-            currentIndex = 0;
-            const nextModeName = currentMode === 2 ? '第二關：中翻英' : '第三關：英翻中';
-            alert(`恭喜完成！接下來進入 ${nextModeName}`);
-            loadQuestion();
-        } else {
-            alert("太棒了！三種模式都挑戰成功！即將回到第一題。");
-            currentIndex = 0;
-            currentMode = 1;
-            loadQuestion();
-        }
-    }
-
-    // 切換題目
     function changeQuestion(step) {
-        let nextIndex = currentIndex + step;
-        
-        if (nextIndex < 0) {
-            currentIndex = 0;
-        } else {
-            currentIndex = nextIndex;
-        }
+        currentIndex += step;
+        if (currentIndex < 0) currentIndex = 0;
+        if (currentIndex >= wordBank.length) currentIndex = 0;
         loadQuestion();
     }
 
-    // 啟動程式：讀取資料
     fetchSheetData();
 </script>
 </body>
