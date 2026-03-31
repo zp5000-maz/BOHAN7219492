@@ -3,210 +3,190 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文挑戰賽 - 專業修復版</title>
+    <title>博瀚英文挑戰賽 - 曾老師正式版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
-        :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; --accent: #e74c3c; }
-        body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
-        .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        #login-logo { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); margin: 0 auto 15px auto; overflow: hidden; background: white; }
+        :root { --p: #3498db; --bg: #121212; --c: #1e1e1e; --t: #eee; --a: #e74c3c; }
+        body { background: var(--bg); color: var(--t); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
+        .container { background: var(--c); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        #login-logo { width: 100px; height: 100px; border-radius: 50%; border: 3px solid var(--p); margin: 0 auto 15px; background: white; overflow: hidden; }
         #login-logo img { width: 100%; height: 100%; object-fit: cover; }
-        .timer-container { width: 100%; height: 8px; background: #333; border-radius: 4px; margin: 15px 0; overflow: hidden; }
-        #timer-bar { width: 100%; height: 100%; background: var(--primary); transition: width 1s linear; }
-        .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 15px; overflow: hidden; background: #252525; display: flex; justify-content: center; align-items: center; }
-        .image-box img { width: 100%; height: 100%; object-fit: cover; }
-        .text-quiz { font-size: 38px; font-weight: bold; height: 160px; display: flex; justify-content: center; align-items: center; color: white; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; padding: 10px; }
-        .options { display: grid; gap: 10px; margin-bottom: 20px; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.2s; }
-        .option-btn:active { background: var(--primary); }
-        input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
-        .btn-main { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
+        .timer-bar { width: 100%; height: 8px; background: #333; border-radius: 4px; margin: 15px 0; overflow: hidden; }
+        #progress { width: 100%; height: 100%; background: var(--p); transition: width 1s linear; }
+        .q-box { font-size: 36px; font-weight: bold; min-height: 140px; display: flex; justify-content: center; align-items: center; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; padding: 15px; color: white; }
+        .img-box { width: 100%; aspect-ratio: 16/10; margin-bottom: 15px; border-radius: 15px; overflow: hidden; display: none; border: 2px solid var(--p); }
+        .img-box img { width: 100%; height: 100%; object-fit: cover; }
+        .options { display: grid; gap: 10px; }
+        .btn { background: #333; color: white; border: 1px solid #444; padding: 16px; border-radius: 12px; font-size: 19px; cursor: pointer; transition: 0.2s; }
+        .btn:active { background: var(--p); }
+        input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 10px; width: 85%; margin-bottom: 12px; font-size: 18px; text-align: center; }
+        .main-btn { background: var(--p); color: white; border: none; padding: 15px 40px; border-radius: 12px; font-weight: bold; cursor: pointer; font-size: 18px; }
+        #fb { height: 35px; margin-top: 10px; font-weight: bold; font-size: 24px; }
         .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
     </style>
 </head>
 <body>
 
 <div class="container">
-    <div id="login-screen">
-        <div id="login-logo"><img src="bohan_logo.jpg" alt="博瀚 logo"></div>
-        <h2 style="color:var(--primary); margin-top:0;">博瀚文理單字挑戰</h2>
-        <input type="text" id="username" placeholder="輸入中文姓名">
-        <input type="password" id="password" placeholder="輸入密碼">
-        <button class="btn-main" onclick="handleLogin()">開始測驗</button>
-        <p id="login-msg" style="color:#555; font-size:14px; margin-top:10px;">資料庫讀取中...</p>
+    <div id="sc-login">
+        <div id="login-logo"><img src="bohan_logo.jpg"></div>
+        <h2 style="color:var(--p)">博瀚單字挑戰</h2>
+        <input type="text" id="u" placeholder="學生中文姓名">
+        <input type="password" id="p" placeholder="登入密碼">
+        <br>
+        <button class="main-btn" onclick="login()">開始測驗</button>
+        <p id="msg" style="color:#777; font-size:14px; margin-top:10px;">資料庫連線中...</p>
     </div>
 
-    <div id="quiz-app" style="display:none;">
+    <div id="sc-quiz" style="display:none">
         <div style="display:flex; justify-content:space-between; font-size:13px; color:#888;">
-            <span id="display-info">準備中...</span>
-            <span id="display-score">得分：0</span>
+            <span id="info">載入中...</span><span id="score">得分: 0</span>
         </div>
-        <div class="timer-container"><div id="timer-bar"></div></div>
-        <div id="img-area" class="image-box"><img id="word-image" src=""></div>
-        <div id="text-area" class="text-quiz" style="display:none;"></div>
-        <div id="options-container" class="options"></div>
-        <div id="feedback" style="height:35px; font-weight:bold; font-size:24px;"></div>
+        <div class="timer-bar"><div id="progress"></div></div>
+        <div id="img-q" class="img-box"><img id="q-img" src=""></div>
+        <div id="text-q" class="q-box"></div>
+        <div id="opts" class="options"></div>
+        <div id="fb"></div>
     </div>
 
-    <div id="result-screen" style="display:none;">
-        <h2 style="color:var(--primary);">挑戰完成！</h2>
-        <p id="final-score" style="font-size:28px; font-weight:bold;"></p>
-        <p id="upload-status" style="color:#f39c12;">⏳ 正在儲存成績...</p>
-        <button class="btn-main" style="background:#444;" onclick="location.reload()">再測一次</button>
+    <div id="sc-res" style="display:none">
+        <h2 style="color:var(--p)">測驗完成！</h2>
+        <p id="total" style="font-size:28px; font-weight:bold;"></p>
+        <p id="status" style="color:#f39c12; font-weight:bold;">⏳ 成績同步中...</p>
+        <button class="main-btn" onclick="location.reload()">重新挑戰</button>
     </div>
     <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
 <script>
-    // ⚠️ 曾老師：請務必填寫 CSV 網址
-    const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
-    const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv'; 
+    // 曾老師：網址已為您寫死，直接使用即可
+    const U_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
+    const W_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv';
+    const FORM_ACTION = 'https://docs.google.com/forms/d/e/1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA/formResponse';
+    const E_NAME = 'entry.1809053896';
+    const E_SCORE = 'entry.254641323';
 
-    // Google 表單 ID 與 欄位編號
-    const FORM_ID = '1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA';
-    const ENTRY_NAME = 'entry.1809053896';
-    const ENTRY_SCORE = 'entry.254641323';
-
-    // 快樂與失望音效網址
-    const SOUND_HAPPY = "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"; // 快樂鈴聲
-    const SOUND_SAD = "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3";   // 失望低音
-
-    let userDB = [], wordBank = [], currentStudent = "", score = 0, qCount = 0, timer = null, timeLeft = 10;
+    let db_u = [], db_w = [], cur_u = "", cur_s = 0, cur_q = 0, timer, time = 10;
 
     function init() {
-        Papa.parse(USER_CSV, { download: true, header: true, complete: (r) => { 
-            userDB = r.data; document.getElementById('login-msg').innerText = "系統就緒，請登入";
+        Papa.parse(U_CSV, { download: true, complete: (r) => { 
+            db_u = r.data.filter(row => row[0] && row[0] !== "姓名"); // 過濾掉標題
+            document.getElementById('msg').innerText = "系統就緒，請登入";
         }});
-        Papa.parse(WORD_CSV, { download: true, header: true, complete: (r) => { 
-            wordBank = r.data.filter(i => Object.values(i)[0]);
+        Papa.parse(W_CSV, { download: true, complete: (r) => { 
+            db_w = r.data.filter(row => row[0] && row[0] !== "單字"); // 過濾掉標題
         }});
     }
 
-    function speak(text, lang = "en-US") {
-        const u = new SpeechSynthesisUtterance(text);
-        u.lang = lang;
-        window.speechSynthesis.speak(u);
+    function speak(txt, lang) {
+        window.speechSynthesis.cancel(); // 停止之前的朗讀
+        const s = new SpeechSynthesisUtterance(txt);
+        s.lang = lang;
+        s.rate = 0.9;
+        window.speechSynthesis.speak(s);
     }
 
-    function playSfx(src) {
-        new Audio(src).play().catch(e => console.log("音效受阻"));
-    }
-
-    function handleLogin() {
-        const u = document.getElementById('username').value.trim();
-        const p = document.getElementById('password').value.trim();
-        const found = userDB.find(row => {
-            const v = Object.values(row);
-            return (v[0]||"").trim() === u && String(v[1]||"").trim() === p;
-        });
+    function login() {
+        const user = document.getElementById('u').value.trim();
+        const pass = document.getElementById('p').value.trim();
+        const found = db_u.find(r => (r[0]||"").trim() === user && String(r[1]||"").trim() === pass);
         if (found) {
-            currentStudent = u;
-            document.getElementById('login-screen').style.display = 'none';
-            document.getElementById('quiz-app').style.display = 'block';
-            startQuestion();
-        } else {
-            document.getElementById('login-msg').innerText = "❌ 姓名或密碼錯誤";
-        }
+            cur_u = user;
+            document.getElementById('sc-login').style.display = 'none';
+            document.getElementById('sc-quiz').style.display = 'block';
+            nextQ();
+        } else { document.getElementById('msg').innerText = "❌ 姓名或密碼錯誤"; document.getElementById('msg').style.color = "#e74c3c"; }
     }
 
-    function startQuestion() {
-        if (qCount >= 30) { finishQuiz(); return; }
-        let level = Math.floor(qCount / 10) + 1;
-        const item = wordBank[qCount % wordBank.length];
-        const vals = Object.values(item);
-        const wordEn = (vals[0] || "").trim();
-        const wordZh = (vals[1] || "").trim();
-
-        document.getElementById('display-info').innerText = `關卡 ${level} - 第 ${qCount + 1} 題`;
-        const imgArea = document.getElementById('img-area');
-        const textArea = document.getElementById('text-area');
+    function nextQ() {
+        if (cur_q >= 30) { end(); return; }
+        let lv = Math.floor(cur_q / 10) + 1;
+        let item = db_w[cur_q % db_w.length];
+        let en = String(item[0] || "").trim();
+        let zh = String(item[1] || "").trim();
         
-        if (level === 1) { // 看圖
-            imgArea.style.display = "flex"; textArea.style.display = "none";
-            document.getElementById('word-image').src = `images/${wordEn.toLowerCase()}.jpg`;
-            setupOptions(wordEn, "en");
-        } else if (level === 2) { // 中翻英
-            imgArea.style.display = "none"; textArea.style.display = "flex";
-            textArea.innerText = wordZh;
-            speak(wordZh, "zh-TW"); // 唸出題目中文
-            setupOptions(wordEn, "en");
+        document.getElementById('info').innerText = `關卡 ${lv}/3 - 第 ${cur_q+1} 題`;
+        const tQ = document.getElementById('text-q'), iQ = document.getElementById('img-q');
+
+        if (lv === 1) { // 看圖
+            iQ.style.display = "block"; tQ.style.display = "none";
+            document.getElementById('q-img').src = `images/${en.toLowerCase()}.jpg`;
+            build(en, "en");
+        } else if (lv === 2) { // 中翻英
+            iQ.style.display = "none"; tQ.style.display = "flex";
+            tQ.innerText = zh; speak(zh, "zh-TW"); build(en, "en");
         } else { // 英翻中
-            imgArea.style.display = "none"; textArea.style.display = "flex";
-            textArea.innerText = wordEn;
-            speak(wordEn, "en-US"); // 唸出題目英文
-            setupOptions(wordZh, "zh");
+            iQ.style.display = "none"; tQ.style.display = "flex";
+            tQ.innerText = en; speak(en, "en-US"); build(zh, "zh");
         }
-        startTimer();
+        startT();
     }
 
-    function setupOptions(correct, type) {
-        const container = document.getElementById('options-container');
+    function build(ans, type) {
+        const container = document.getElementById('opts');
         container.innerHTML = "";
-        let choices = [correct];
-        let pool = wordBank.map(w => type === "en" ? Object.values(w)[0] : Object.values(w)[1]);
-        pool = [...new Set(pool)].filter(v => v !== correct).sort(() => Math.random() - 0.5);
-        if(pool[0]) choices.push(pool[0]);
-        if(pool[1]) choices.push(pool[1]);
-        choices.sort(() => Math.random() - 0.5);
-
-        choices.forEach(text => {
-            const btn = document.createElement('button');
-            btn.className = "option-btn";
-            btn.innerText = text;
-            btn.onclick = () => checkAnswer(text, correct, type);
-            container.appendChild(btn);
+        let pool = db_w.map(w => type === "en" ? w[0] : w[1]).filter(v => v && v !== ans);
+        let choices = [ans, ...pool.sort(() => 0.5 - Math.random()).slice(0, 2)].sort(() => 0.5 - Math.random());
+        choices.forEach(txt => {
+            const b = document.createElement('button');
+            b.className = "btn"; b.innerText = txt;
+            b.onclick = () => check(txt, ans, type);
+            container.appendChild(b);
         });
     }
 
-    function startTimer() {
-        clearInterval(timer); timeLeft = 10;
-        document.getElementById('timer-bar').style.width = "100%";
+    function startT() {
+        clearInterval(timer); time = 10;
+        document.getElementById('progress').style.width = "100%";
         timer = setInterval(() => {
-            timeLeft--;
-            document.getElementById('timer-bar').style.width = (timeLeft * 10) + "%";
-            if (timeLeft <= 0) { clearInterval(timer); checkAnswer(null, "TIMEOUT", ""); }
+            time--;
+            document.getElementById('progress').style.width = (time * 10) + "%";
+            if (time <= 0) { clearInterval(timer); check(null, "TIMEOUT", ""); }
         }, 1000);
     }
 
-    function checkAnswer(selected, correct, type) {
+    function check(sel, ans, type) {
         clearInterval(timer);
-        const fb = document.getElementById('feedback');
-        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
-
-        if (selected === correct) {
-            fb.innerText = "⭕ Correct!"; fb.style.color = "#2ecc71";
-            playSfx(SOUND_HAPPY);
-            score++;
-            document.getElementById('display-score').innerText = `得分：${score}`;
-            speak(correct, type === "zh" ? "zh-TW" : "en-US"); // 唸出正確答案
+        const f = document.getElementById('fb');
+        document.querySelectorAll('.btn').forEach(b => b.disabled = true);
+        if (sel === ans) {
+            f.innerText = "⭕ Correct!"; f.style.color = "#2ecc71";
+            new Audio("https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3").play();
+            cur_s++;
+            document.getElementById('score').innerText = `得分: ${cur_s}`;
+            setTimeout(() => speak(ans, type === "zh" ? "zh-TW" : "en-US"), 200);
         } else {
-            fb.innerText = "❌ Incorrect!"; fb.style.color = "#e74c3c";
-            playSfx(SOUND_SAD);
+            f.innerText = "❌ Incorrect!"; f.style.color = "#e74c3c";
+            new Audio("https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3").play();
         }
-
-        setTimeout(() => { fb.innerText = ""; qCount++; startQuestion(); }, 1500);
+        setTimeout(() => { f.innerText = ""; cur_q++; nextQ(); }, 1600);
     }
 
-    function finishQuiz() {
-        document.getElementById('quiz-app').style.display = 'none';
-        document.getElementById('result-screen').style.display = 'block';
-        document.getElementById('final-score').innerText = `總得分：${score} / 30`;
+    function end() {
+        document.getElementById('sc-quiz').style.display = 'none';
+        document.getElementById('sc-res').style.display = 'block';
+        document.getElementById('total').innerText = `總得分：${cur_s} / 30`;
         
-        // ★ 終極修正：使用 Google 表單提交網址組合
-        const finalUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?${ENTRY_NAME}=${encodeURIComponent(currentStudent)}&${ENTRY_SCORE}=${score}&submit=Submit`;
+        // 終極回傳：同時使用三種方式，確保成功
+        const params = `${E_NAME}=${encodeURIComponent(cur_u)}&${E_SCORE}=${cur_s}&submit=Submit`;
+        const fullUrl = `${FORM_ACTION}?${params}`;
         
-        // 建立隱藏的 iframe 來完成提交，完全模擬瀏覽器行為
+        // 1. Beacon API (最現代)
+        if (navigator.sendBeacon) navigator.sendBeacon(fullUrl);
+        
+        // 2. Image Image (最暴力)
+        const img = new Image(); img.src = fullUrl;
+        
+        // 3. Hidden Iframe (最傳統)
         const ifr = document.createElement('iframe');
-        ifr.src = finalUrl;
-        ifr.style.display = 'none';
+        ifr.src = fullUrl; ifr.style.display = 'none';
         document.body.appendChild(ifr);
-        
-        setTimeout(() => {
-            document.getElementById('upload-status').innerText = "✅ 成績已儲存至雲端";
-            document.getElementById('upload-status').style.color = "#2ecc71";
-        }, 2000);
-    }
 
+        setTimeout(() => {
+            document.getElementById('status').innerText = "✅ 成績已成功存入試算表";
+            document.getElementById('status').style.color = "#2ecc71";
+        }, 2500);
+    }
     init();
 </script>
 </body>
