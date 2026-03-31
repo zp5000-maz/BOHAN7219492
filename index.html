@@ -3,19 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文挑戰賽 - 曾老師正式版</title>
+    <title>博瀚英文挑戰賽 - 最終正式版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; --accent: #e74c3c; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
+        
+        /* 新增：登入畫面 logo 的樣式 */
+        #login-logo { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--primary); margin: 0 auto 15px auto; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
+        #login-logo img { width: 100%; height: 100%; object-fit: cover; }
+
         .timer-container { width: 100%; height: 8px; background: #333; border-radius: 4px; margin: 15px 0; overflow: hidden; }
         #timer-bar { width: 100%; height: 100%; background: var(--primary); transition: width 1s linear; }
         .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 15px; overflow: hidden; background: #252525; display: flex; justify-content: center; align-items: center; }
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .text-quiz { font-size: 42px; font-weight: bold; height: 160px; display: flex; justify-content: center; align-items: center; color: white; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; }
         .options { display: grid; gap: 10px; margin-bottom: 20px; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.2s; }
         .option-btn:disabled { opacity: 0.5; }
         input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
@@ -26,7 +31,10 @@
 
 <div class="container">
     <div id="login-screen">
-        <h2 style="color:var(--primary);">博瀚文理單字挑戰</h2>
+        <div id="login-logo">
+            <img src="logo.png" alt="博瀚 logo">
+        </div>
+        <h2 style="color:var(--primary); margin-top:0; margin-bottom:10px;">博瀚文理單字挑戰</h2>
         <input type="text" id="username" placeholder="輸入中文姓名">
         <input type="password" id="password" placeholder="輸入密碼">
         <button class="btn-main" onclick="handleLogin()">開始測驗</button>
@@ -62,7 +70,7 @@
     const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
     const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv'; 
 
-    // 已幫您填好表單資訊
+    // 已填好表單資訊
     const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA/formResponse';
     const ENTRY_NAME = 'entry.1809053896';
     const ENTRY_SCORE = 'entry.254641323';
@@ -76,14 +84,20 @@
             document.getElementById('login-msg').innerText = "連線成功，請登入";
         }});
         Papa.parse(WORD_CSV, { download: true, header: true, complete: (r) => { 
-            wordBank = r.data.filter(i => Object.values(i)[0]);
+            // 強力欄位抓取
+            wordBank = r.data.filter(i => (i["單字"] || Object.values(i)[0]));
         }});
     }
 
     function handleLogin() {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value.trim();
-        const found = userDB.find(row => Object.values(row)[0].trim() === u && Object.values(row)[1].trim() === p);
+        // ★ 強力登入比對邏輯：無視標題，無視空格
+        const found = userDB.find(row => {
+            const vals = Object.values(row);
+            return (vals[0] || "").trim() === u && String(vals[1] || "").trim() === p;
+        });
+        
         if (found) {
             currentStudent = u;
             document.getElementById('login-screen').style.display = 'none';
@@ -91,6 +105,7 @@
             startQuestion();
         } else {
             document.getElementById('login-msg').innerText = "❌ 姓名或密碼錯誤";
+            document.getElementById('login-msg').style.color = "#e74c3c";
         }
     }
 
@@ -101,8 +116,10 @@
         document.getElementById('display-info').innerText = `第 ${level} 關 - 第 ${qCount + 1} 題`;
         
         const item = wordBank[qCount % wordBank.length];
-        const wordEn = Object.values(item)[0].trim();
-        const wordZh = (Object.values(item)[1] || "未提供").trim();
+        // 抓取第一個與第二個欄位當單字與翻譯
+        const vals = Object.values(item);
+        const wordEn = (vals[0] || "").trim();
+        const wordZh = (vals[1] || "未提供").trim();
 
         const imgArea = document.getElementById('img-area');
         const textArea = document.getElementById('text-area');
@@ -125,9 +142,13 @@
         const container = document.getElementById('options-container');
         container.innerHTML = "";
         let choices = [correct];
+        // 依據類型(英/中)抓取所有單字
         let pool = wordBank.map(w => type === "en" ? Object.values(w)[0] : Object.values(w)[1]);
+        // 去重與過濾
         pool = [...new Set(pool)].filter(v => v !== correct).sort(() => Math.random() - 0.5);
-        choices.push(pool[0], pool[1]);
+        // 選取錯誤選項
+        if(pool[0]) choices.push(pool[0]);
+        if(pool[1]) choices.push(pool[1]);
         choices.sort(() => Math.random() - 0.5);
 
         choices.forEach(text => {
@@ -177,7 +198,7 @@
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('final-score').innerText = `總得分：${score} / 30`;
         
-        // 自動回傳資料
+        // 自動回傳資料到您原本的試算表(表單回應分頁)
         const body = new URLSearchParams();
         body.append(ENTRY_NAME, currentStudent);
         body.append(ENTRY_SCORE, score);
