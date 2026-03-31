@@ -3,24 +3,21 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文挑戰賽 - 最終正式版</title>
+    <title>博瀚英文挑戰賽 - 修正版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; --accent: #e74c3c; }
         body { background-color: var(--bg); color: var(--text); font-family: "Microsoft JhengHei", sans-serif; display: flex; justify-content: center; align-items: center; min-height: 100vh; margin: 0; }
         .container { background-color: var(--card); padding: 25px; border-radius: 20px; width: 90%; max-width: 450px; text-align: center; box-shadow: 0 10px 30px rgba(0,0,0,0.5); }
-        
-        /* 新增：登入畫面 logo 的樣式 */
-        #login-logo { width: 140px; height: 140px; border-radius: 50%; border: 3px solid var(--primary); margin: 0 auto 15px auto; overflow: hidden; display: flex; justify-content: center; align-items: center; background: white; }
+        #login-logo { width: 120px; height: 120px; border-radius: 50%; border: 3px solid var(--primary); margin: 0 auto 15px auto; overflow: hidden; background: white; }
         #login-logo img { width: 100%; height: 100%; object-fit: cover; }
-
         .timer-container { width: 100%; height: 8px; background: #333; border-radius: 4px; margin: 15px 0; overflow: hidden; }
         #timer-bar { width: 100%; height: 100%; background: var(--primary); transition: width 1s linear; }
         .image-box { border: 2px solid var(--primary); border-radius: 15px; width: 100%; aspect-ratio: 16 / 10; margin-bottom: 15px; overflow: hidden; background: #252525; display: flex; justify-content: center; align-items: center; }
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
-        .text-quiz { font-size: 42px; font-weight: bold; height: 160px; display: flex; justify-content: center; align-items: center; color: white; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; }
+        .text-quiz { font-size: 38px; font-weight: bold; height: 160px; display: flex; justify-content: center; align-items: center; color: white; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; padding: 10px; }
         .options { display: grid; gap: 10px; margin-bottom: 20px; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.2s; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
         .option-btn:disabled { opacity: 0.5; }
         input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
@@ -31,14 +28,12 @@
 
 <div class="container">
     <div id="login-screen">
-        <div id="login-logo">
-            <img src="logo.png" alt="博瀚 logo">
-        </div>
-        <h2 style="color:var(--primary); margin-top:0; margin-bottom:10px;">博瀚文理單字挑戰</h2>
+        <div id="login-logo"><img src="bohan_logo.jpg" alt="博瀚 logo"></div>
+        <h2 style="color:var(--primary); margin-top:0;">博瀚文理單字挑戰</h2>
         <input type="text" id="username" placeholder="輸入中文姓名">
         <input type="password" id="password" placeholder="輸入密碼">
         <button class="btn-main" onclick="handleLogin()">開始測驗</button>
-        <p id="login-msg" style="color:#555; font-size:14px; margin-top:10px;">資料庫讀取中...</p>
+        <p id="login-msg" style="color:#555; font-size:14px; margin-top:10px;">資料庫連線中...</p>
     </div>
 
     <div id="quiz-app" style="display:none;">
@@ -47,10 +42,8 @@
             <span id="display-score">得分：0</span>
         </div>
         <div class="timer-container"><div id="timer-bar"></div></div>
-        
         <div id="img-area" class="image-box"><img id="word-image" src=""></div>
         <div id="text-area" class="text-quiz" style="display:none;"></div>
-
         <div id="options-container" class="options"></div>
         <div id="feedback" style="height:35px; font-weight:bold; font-size:24px;"></div>
     </div>
@@ -58,46 +51,50 @@
     <div id="result-screen" style="display:none;">
         <h2 style="color:var(--primary);">挑戰完成！</h2>
         <p id="final-score" style="font-size:28px; font-weight:bold;"></p>
-        <p style="color:#2ecc71; font-weight:bold;">✅ 成績已自動上傳雲端</p>
+        <p style="color:#2ecc71;">✅ 成績已成功上傳</p>
         <button class="btn-main" style="background:#444;" onclick="location.reload()">再測一次</button>
     </div>
-
-    <div class="footer">博瀚文理曾益慧老師整理</div>
+    <div class="footer">博瀚文理Alice老師整理</div>
 </div>
 
+<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
+
 <script>
-    // ⚠️ 曾老師：請貼上您的兩串 CSV 網址
     const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
     const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv'; 
-
-    // 已填好表單資訊
-    const FORM_URL = 'https://docs.google.com/forms/d/e/1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA/formResponse';
+    
+    // 表單設定
+    const FORM_ID = '1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA';
     const ENTRY_NAME = 'entry.1809053896';
     const ENTRY_SCORE = 'entry.254641323';
 
-    let userDB = [], wordBank = [], currentStudent = "";
-    let score = 0, qCount = 0, timer = null, timeLeft = 10;
+    // 音效網址
+    const SOUND_CORRECT = "https://www.soundjay.com/buttons/sounds/button-37.mp3";
+    const SOUND_WRONG = "https://www.soundjay.com/buttons/sounds/button-10.mp3";
+
+    let userDB = [], wordBank = [], currentStudent = "", score = 0, qCount = 0, timer = null, timeLeft = 10;
 
     function init() {
         Papa.parse(USER_CSV, { download: true, header: true, complete: (r) => { 
-            userDB = r.data; 
-            document.getElementById('login-msg').innerText = "連線成功，請登入";
+            userDB = r.data; document.getElementById('login-msg').innerText = "連線成功";
         }});
         Papa.parse(WORD_CSV, { download: true, header: true, complete: (r) => { 
-            // 強力欄位抓取
-            wordBank = r.data.filter(i => (i["單字"] || Object.values(i)[0]));
+            wordBank = r.data.filter(i => Object.values(i)[0]);
         }});
+    }
+
+    function playSound(src) {
+        const audio = new Audio(src);
+        audio.play().catch(e => console.log("音效播不出來:", e));
     }
 
     function handleLogin() {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value.trim();
-        // ★ 強力登入比對邏輯：無視標題，無視空格
         const found = userDB.find(row => {
             const vals = Object.values(row);
             return (vals[0] || "").trim() === u && String(vals[1] || "").trim() === p;
         });
-        
         if (found) {
             currentStudent = u;
             document.getElementById('login-screen').style.display = 'none';
@@ -105,33 +102,29 @@
             startQuestion();
         } else {
             document.getElementById('login-msg').innerText = "❌ 姓名或密碼錯誤";
-            document.getElementById('login-msg').style.color = "#e74c3c";
         }
     }
 
     function startQuestion() {
         if (qCount >= 30) { finishQuiz(); return; }
-        
         let level = Math.floor(qCount / 10) + 1;
-        document.getElementById('display-info').innerText = `第 ${level} 關 - 第 ${qCount + 1} 題`;
-        
         const item = wordBank[qCount % wordBank.length];
-        // 抓取第一個與第二個欄位當單字與翻譯
         const vals = Object.values(item);
         const wordEn = (vals[0] || "").trim();
-        const wordZh = (vals[1] || "未提供").trim();
+        const wordZh = (vals[1] || "").trim();
 
+        document.getElementById('display-info').innerText = `關卡 ${level} - 第 ${qCount + 1} 題`;
         const imgArea = document.getElementById('img-area');
         const textArea = document.getElementById('text-area');
         
-        if (level === 1) { // 看圖識字
+        if (level === 1) {
             imgArea.style.display = "flex"; textArea.style.display = "none";
             document.getElementById('word-image').src = `images/${wordEn.toLowerCase()}.jpg`;
             setupOptions(wordEn, "en");
-        } else if (level === 2) { // 中翻英
+        } else if (level === 2) {
             imgArea.style.display = "none"; textArea.style.display = "flex";
             textArea.innerText = wordZh; setupOptions(wordEn, "en");
-        } else { // 英翻中
+        } else {
             imgArea.style.display = "none"; textArea.style.display = "flex";
             textArea.innerText = wordEn; setupOptions(wordZh, "zh");
         }
@@ -142,11 +135,8 @@
         const container = document.getElementById('options-container');
         container.innerHTML = "";
         let choices = [correct];
-        // 依據類型(英/中)抓取所有單字
         let pool = wordBank.map(w => type === "en" ? Object.values(w)[0] : Object.values(w)[1]);
-        // 去重與過濾
         pool = [...new Set(pool)].filter(v => v !== correct).sort(() => Math.random() - 0.5);
-        // 選取錯誤選項
         if(pool[0]) choices.push(pool[0]);
         if(pool[1]) choices.push(pool[1]);
         choices.sort(() => Math.random() - 0.5);
@@ -161,13 +151,12 @@
     }
 
     function startTimer() {
-        clearInterval(timer);
-        timeLeft = 10;
+        clearInterval(timer); timeLeft = 10;
         document.getElementById('timer-bar').style.width = "100%";
         timer = setInterval(() => {
             timeLeft--;
             document.getElementById('timer-bar').style.width = (timeLeft * 10) + "%";
-            if (timeLeft <= 0) { clearInterval(timer); checkAnswer(null, "TIMEOUT"); }
+            if (timeLeft <= 0) { clearInterval(timer); checkAnswer(null, "X"); }
         }, 1000);
     }
 
@@ -179,11 +168,16 @@
 
         if (selected === correct) {
             fb.innerText = "⭕ 正確！"; fb.style.color = "#2ecc71";
+            playSound(SOUND_CORRECT);
             score++;
             document.getElementById('display-score').innerText = `得分：${score}`;
-            if(type === "en") window.speechSynthesis.speak(new SpeechSynthesisUtterance(selected));
+            // 語音朗讀：如果是中文字就讀中文，英文就讀英文
+            let utterance = new SpeechSynthesisUtterance(correct);
+            utterance.lang = (type === "zh") ? "zh-TW" : "en-US";
+            window.speechSynthesis.speak(utterance);
         } else {
             fb.innerText = "❌ 答錯了！"; fb.style.color = "#e74c3c";
+            playSound(SOUND_WRONG);
         }
 
         setTimeout(() => {
@@ -198,11 +192,24 @@
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('final-score').innerText = `總得分：${score} / 30`;
         
-        // 自動回傳資料到您原本的試算表(表單回應分頁)
-        const body = new URLSearchParams();
-        body.append(ENTRY_NAME, currentStudent);
-        body.append(ENTRY_SCORE, score);
-        fetch(FORM_URL, { method: 'POST', mode: 'no-cors', body });
+        // 修正表單回傳方式
+        const formAction = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
+        const postForm = document.createElement('form');
+        postForm.method = 'POST';
+        postForm.action = formAction;
+        postForm.target = 'hidden_iframe'; // 避免頁面跳轉
+
+        const nameInput = document.createElement('input');
+        nameInput.name = ENTRY_NAME; nameInput.value = currentStudent;
+        postForm.appendChild(nameInput);
+
+        const scoreInput = document.createElement('input');
+        scoreInput.name = ENTRY_SCORE; scoreInput.value = score;
+        postForm.appendChild(scoreInput);
+
+        document.body.appendChild(postForm);
+        postForm.submit();
+        document.body.removeChild(postForm);
     }
 
     init();
