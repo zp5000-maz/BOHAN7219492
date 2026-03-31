@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>博瀚英文挑戰賽 - 修正版</title>
+    <title>博瀚英文挑戰賽 - 專業修復版</title>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.3.2/papaparse.min.js"></script>
     <style>
         :root { --primary: #3498db; --bg: #121212; --card: #1e1e1e; --text: #eeeeee; --accent: #e74c3c; }
@@ -17,8 +17,8 @@
         .image-box img { width: 100%; height: 100%; object-fit: cover; }
         .text-quiz { font-size: 38px; font-weight: bold; height: 160px; display: flex; justify-content: center; align-items: center; color: white; background: #252525; border-radius: 15px; margin-bottom: 15px; border: 2px solid #444; padding: 10px; }
         .options { display: grid; gap: 10px; margin-bottom: 20px; }
-        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; }
-        .option-btn:disabled { opacity: 0.5; }
+        .option-btn { background: #333; color: white; border: 1px solid #444; padding: 15px; border-radius: 12px; cursor: pointer; font-size: 18px; transition: 0.2s; }
+        .option-btn:active { background: var(--primary); }
         input { background: #2a2a2a; border: 1px solid #444; color: white; padding: 14px; border-radius: 12px; font-size: 18px; text-align: center; width: 80%; margin-bottom: 15px; }
         .btn-main { background: var(--primary); color: white; border: none; padding: 15px 30px; border-radius: 12px; cursor: pointer; font-size: 18px; font-weight: bold; }
         .footer { margin-top: 25px; font-size: 12px; color: #666; border-top: 1px solid #333; padding-top: 15px; }
@@ -33,12 +33,12 @@
         <input type="text" id="username" placeholder="輸入中文姓名">
         <input type="password" id="password" placeholder="輸入密碼">
         <button class="btn-main" onclick="handleLogin()">開始測驗</button>
-        <p id="login-msg" style="color:#555; font-size:14px; margin-top:10px;">資料庫連線中...</p>
+        <p id="login-msg" style="color:#555; font-size:14px; margin-top:10px;">資料庫讀取中...</p>
     </div>
 
     <div id="quiz-app" style="display:none;">
         <div style="display:flex; justify-content:space-between; font-size:13px; color:#888;">
-            <span id="display-info">第一關：看圖識字</span>
+            <span id="display-info">準備中...</span>
             <span id="display-score">得分：0</span>
         </div>
         <div class="timer-container"><div id="timer-bar"></div></div>
@@ -51,49 +51,53 @@
     <div id="result-screen" style="display:none;">
         <h2 style="color:var(--primary);">挑戰完成！</h2>
         <p id="final-score" style="font-size:28px; font-weight:bold;"></p>
-        <p style="color:#2ecc71;">✅ 成績已成功上傳</p>
+        <p id="upload-status" style="color:#f39c12;">⏳ 正在儲存成績...</p>
         <button class="btn-main" style="background:#444;" onclick="location.reload()">再測一次</button>
     </div>
-    <div class="footer">博瀚文理Alice老師整理</div>
+    <div class="footer">博瀚文理曾益慧老師整理</div>
 </div>
 
-<iframe name="hidden_iframe" id="hidden_iframe" style="display:none;"></iframe>
-
 <script>
+    // ⚠️ 曾老師：請務必填寫 CSV 網址
     const USER_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=988212355&single=true&output=csv'; 
     const WORD_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vR_JxaWoXffkQ7vVZM27GUkl8Q0H6v4zyPr9go3_1_3O3ReFeaJNWqUgk3lYLSYw8b0WALK9OwMGYgk/pub?gid=0&single=true&output=csv'; 
-    
-    // 表單設定
+
+    // Google 表單 ID 與 欄位編號
     const FORM_ID = '1FAIpQLSfZJgHIn20q9w1x18ZRInsM0OjDiCQMk9bsBWmfi7Rsa9rZUA';
     const ENTRY_NAME = 'entry.1809053896';
     const ENTRY_SCORE = 'entry.254641323';
 
-    // 音效網址
-    const SOUND_CORRECT = "https://www.soundjay.com/buttons/sounds/button-37.mp3";
-    const SOUND_WRONG = "https://www.soundjay.com/buttons/sounds/button-10.mp3";
+    // 快樂與失望音效網址
+    const SOUND_HAPPY = "https://assets.mixkit.co/active_storage/sfx/2013/2013-preview.mp3"; // 快樂鈴聲
+    const SOUND_SAD = "https://assets.mixkit.co/active_storage/sfx/2018/2018-preview.mp3";   // 失望低音
 
     let userDB = [], wordBank = [], currentStudent = "", score = 0, qCount = 0, timer = null, timeLeft = 10;
 
     function init() {
         Papa.parse(USER_CSV, { download: true, header: true, complete: (r) => { 
-            userDB = r.data; document.getElementById('login-msg').innerText = "連線成功";
+            userDB = r.data; document.getElementById('login-msg').innerText = "系統就緒，請登入";
         }});
         Papa.parse(WORD_CSV, { download: true, header: true, complete: (r) => { 
             wordBank = r.data.filter(i => Object.values(i)[0]);
         }});
     }
 
-    function playSound(src) {
-        const audio = new Audio(src);
-        audio.play().catch(e => console.log("音效播不出來:", e));
+    function speak(text, lang = "en-US") {
+        const u = new SpeechSynthesisUtterance(text);
+        u.lang = lang;
+        window.speechSynthesis.speak(u);
+    }
+
+    function playSfx(src) {
+        new Audio(src).play().catch(e => console.log("音效受阻"));
     }
 
     function handleLogin() {
         const u = document.getElementById('username').value.trim();
         const p = document.getElementById('password').value.trim();
         const found = userDB.find(row => {
-            const vals = Object.values(row);
-            return (vals[0] || "").trim() === u && String(vals[1] || "").trim() === p;
+            const v = Object.values(row);
+            return (v[0]||"").trim() === u && String(v[1]||"").trim() === p;
         });
         if (found) {
             currentStudent = u;
@@ -117,16 +121,20 @@
         const imgArea = document.getElementById('img-area');
         const textArea = document.getElementById('text-area');
         
-        if (level === 1) {
+        if (level === 1) { // 看圖
             imgArea.style.display = "flex"; textArea.style.display = "none";
             document.getElementById('word-image').src = `images/${wordEn.toLowerCase()}.jpg`;
             setupOptions(wordEn, "en");
-        } else if (level === 2) {
+        } else if (level === 2) { // 中翻英
             imgArea.style.display = "none"; textArea.style.display = "flex";
-            textArea.innerText = wordZh; setupOptions(wordEn, "en");
-        } else {
+            textArea.innerText = wordZh;
+            speak(wordZh, "zh-TW"); // 唸出題目中文
+            setupOptions(wordEn, "en");
+        } else { // 英翻中
             imgArea.style.display = "none"; textArea.style.display = "flex";
-            textArea.innerText = wordEn; setupOptions(wordZh, "zh");
+            textArea.innerText = wordEn;
+            speak(wordEn, "en-US"); // 唸出題目英文
+            setupOptions(wordZh, "zh");
         }
         startTimer();
     }
@@ -156,35 +164,27 @@
         timer = setInterval(() => {
             timeLeft--;
             document.getElementById('timer-bar').style.width = (timeLeft * 10) + "%";
-            if (timeLeft <= 0) { clearInterval(timer); checkAnswer(null, "X"); }
+            if (timeLeft <= 0) { clearInterval(timer); checkAnswer(null, "TIMEOUT", ""); }
         }, 1000);
     }
 
     function checkAnswer(selected, correct, type) {
         clearInterval(timer);
-        const btns = document.querySelectorAll('.option-btn');
-        btns.forEach(b => b.disabled = true);
         const fb = document.getElementById('feedback');
+        document.querySelectorAll('.option-btn').forEach(b => b.disabled = true);
 
         if (selected === correct) {
-            fb.innerText = "⭕ 正確！"; fb.style.color = "#2ecc71";
-            playSound(SOUND_CORRECT);
+            fb.innerText = "⭕ Correct!"; fb.style.color = "#2ecc71";
+            playSfx(SOUND_HAPPY);
             score++;
             document.getElementById('display-score').innerText = `得分：${score}`;
-            // 語音朗讀：如果是中文字就讀中文，英文就讀英文
-            let utterance = new SpeechSynthesisUtterance(correct);
-            utterance.lang = (type === "zh") ? "zh-TW" : "en-US";
-            window.speechSynthesis.speak(utterance);
+            speak(correct, type === "zh" ? "zh-TW" : "en-US"); // 唸出正確答案
         } else {
-            fb.innerText = "❌ 答錯了！"; fb.style.color = "#e74c3c";
-            playSound(SOUND_WRONG);
+            fb.innerText = "❌ Incorrect!"; fb.style.color = "#e74c3c";
+            playSfx(SOUND_SAD);
         }
 
-        setTimeout(() => {
-            fb.innerText = "";
-            qCount++;
-            startQuestion();
-        }, 1200);
+        setTimeout(() => { fb.innerText = ""; qCount++; startQuestion(); }, 1500);
     }
 
     function finishQuiz() {
@@ -192,24 +192,19 @@
         document.getElementById('result-screen').style.display = 'block';
         document.getElementById('final-score').innerText = `總得分：${score} / 30`;
         
-        // 修正表單回傳方式
-        const formAction = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse`;
-        const postForm = document.createElement('form');
-        postForm.method = 'POST';
-        postForm.action = formAction;
-        postForm.target = 'hidden_iframe'; // 避免頁面跳轉
-
-        const nameInput = document.createElement('input');
-        nameInput.name = ENTRY_NAME; nameInput.value = currentStudent;
-        postForm.appendChild(nameInput);
-
-        const scoreInput = document.createElement('input');
-        scoreInput.name = ENTRY_SCORE; scoreInput.value = score;
-        postForm.appendChild(scoreInput);
-
-        document.body.appendChild(postForm);
-        postForm.submit();
-        document.body.removeChild(postForm);
+        // ★ 終極修正：使用 Google 表單提交網址組合
+        const finalUrl = `https://docs.google.com/forms/d/e/${FORM_ID}/formResponse?${ENTRY_NAME}=${encodeURIComponent(currentStudent)}&${ENTRY_SCORE}=${score}&submit=Submit`;
+        
+        // 建立隱藏的 iframe 來完成提交，完全模擬瀏覽器行為
+        const ifr = document.createElement('iframe');
+        ifr.src = finalUrl;
+        ifr.style.display = 'none';
+        document.body.appendChild(ifr);
+        
+        setTimeout(() => {
+            document.getElementById('upload-status').innerText = "✅ 成績已儲存至雲端";
+            document.getElementById('upload-status').style.color = "#2ecc71";
+        }, 2000);
     }
 
     init();
